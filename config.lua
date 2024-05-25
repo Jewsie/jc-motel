@@ -8,6 +8,7 @@ Config.RestrictRooms = true -- If set to true, people can only rent 1 room at a 
 Config.RestrictMotels = true -- If set to true, people cna only buy 1 motel at a time!
 Config.Lockpick = 'lockpick' -- Item to lockpick doors if Config.EnableRobbery is set to true!
 Config.MotelKey = 'motelkey' -- The item used for motel keys!
+Config.CopCount = 2 -- How many cops required to break into a motel room if Config.EnableRobbery is set to true!
 
 Config.Motels = {
     ['davismotel'] = { -- The unique id of the motel!

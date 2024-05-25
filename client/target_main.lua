@@ -356,7 +356,24 @@ Citizen.CreateThread(function()
                     label = 'Break into room',
                     icon = 'fas fa-doorlock',
                     action = function()
-                        
+                        QBCore.Functions.TriggerCallback('motels:GetCops', function(cops)
+                            if cops >= Config.CopCount then
+                                TriggerEvent('qb-lockpick:client:openLockpick', function(success)
+                                    if success then 
+                                        Config.DoorlockAction(v.uniqueID, true)
+                                        v.doorLocked = false
+                                        Wait(10 * 60000)
+                                        Config.DoorlockAction(v.uniqueID, false)
+                                        v.doorLocked = true
+                                        TriggerEvent('police:client:policeAlert', GetEntityCoords(PlayerPedId()), 'Motel breakin reported!')
+                                    end
+                                    QBCore.Functions.Notify('Failed lockpicking room!', 'error', 3000)
+                                    TriggerEvent('police:client:policeAlert', GetEntityCoords(PlayerPedId()), 'Motel breakin reported!')
+                                end)
+                            else
+                                QBCore.Functions.Notify('Not enough cops on duty!', 'error', 3000)
+                            end
+                        end)
                     end
                 }
             end

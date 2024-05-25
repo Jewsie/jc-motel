@@ -34,6 +34,17 @@ QBCore.Functions.CreateCallback('rentedRooms', function(source, cb)
     end)
 end)
 
+QBCore.Functions.CreateCallback('motels:GetCops', function(_, cb)
+    local amount = 0
+	local players = QBCore.Functions.GetQBPlayers()
+	for _, v in pairs(players) do
+		if v.PlayerData.job.name == 'leo' and v.PlayerData.job.onduty then
+			amount = amount + 1
+		end
+	end
+	cb(amount)
+end)
+
 Citizen.CreateThread(function()
     while true do
         MySQL.query('SELECT `motel`, `uniqueid`, `renter`, `duration` FROM `jc_motels`', {}, function(response)
