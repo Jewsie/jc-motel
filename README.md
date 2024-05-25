@@ -13,5 +13,6 @@ Discord: https://discord.com/invite/CZGDPcdSa7
 - Modify the amount of weight and slots a player will have in each room!
 
 # Items needed
-```motelkey = { name = 'motelkey', label = 'Motel Key', weight = 0, type = 'item', image = 'motelkey.png', unique = true, useable = true, shouldClose = true, combinable = nil, description = 'A key for a room maybe..' },
+```
+motelkey = { name = 'motelkey', label = 'Motel Key', weight = 0, type = 'item', image = 'motelkey.png', unique = true, useable = true, shouldClose = true, combinable = nil, description = 'A key for a room maybe..' },
 ```
