@@ -11,6 +11,8 @@ Discord: https://discord.com/invite/CZGDPcdSa7
 - Entails and stash and wardrobe for motel renters!
 - Possible to toggle being able to buy a motel!
 - Modify the amount of weight and slots a player will have in each room!
+- Toggle motel robberies, so players can break into another players rooms!
+- Allow or disallow multiple rooms or motels for players to buy/rent
 
 # Items needed
 ```
