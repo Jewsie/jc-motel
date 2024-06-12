@@ -64,3 +64,32 @@ RegisterNetEvent('jc-motels:client:changeMotelData', function(motel, dataType, v
         end
     end
 end)
+
+RegisterNetEvent('motel:client:setDoorState', function(uniqueID)
+    for key, value in pairs(Config.Rooms) do
+        for _, v in pairs(value) do
+            v.doorLocked = not v.doorLocked
+        end
+    end
+end)
+
+Citizen.CreateThread(function()
+    Wait(500)
+    for key, value in pairs(Config.Rooms) do
+        for _, v in pairs(value) do
+            QBCore.Functions.TriggerCallback('motels:getDoorDate', function(data)
+                if data then
+                    if data.uniqueID == v.uniqueID then
+                        v.doorLocked = data.isLocked
+                        Config.DoorlockAction(v.uniqueID, v.doorLocked)
+                    end
+                else
+                    if Config.Debug then
+                        print('No data received for uniqueID: ' .. v.uniqueID)
+                    end
+                end
+            end, v.uniqueID)
+            Wait(200)
+        end
+    end
+end)

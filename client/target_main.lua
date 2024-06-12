@@ -312,7 +312,7 @@ Citizen.CreateThread(function()
             local tableData = {}
         
             tableData[#tableData + 1] = {
-                label = 'Unlock Door',
+                label = 'Lock/Unlock Door',
                 icon = 'fas fa-key',
                 action = function()
                     local PlayerData = QBCore.Functions.GetPlayerData()
@@ -328,15 +328,15 @@ Citizen.CreateThread(function()
                                 end
                                 TaskPlayAnim(PlayerPedId(), "anim@heists@keycard@", "exit", 8.0, 1.0, -1, 48, 0, 0, 0, 0)
                                 Wait(300)
-                                if v.doorLocked then
-                                    Config.DoorlockAction(keydata.uniqueID, true)
-                                    v.doorLocked = false
-                                    ClearPedTasks(PlayerPedId())
-                                else
-                                    Config.DoorlockAction(keydata.uniqueID, false)
-                                    v.doorLocked = true
-                                    ClearPedTasks(PlayerPedId())
-                                end
+                                QBCore.Functions.TriggerCallback('motels:getDoorDate', function(data)
+                                    if data then
+                                        if Config.DoorlockSystem == 'qb' then
+                                            Config.DoorlockAction(keydata.uniqueID, not data.isLocked)
+                                        end
+                                        ClearPedTasks(PlayerPedId())
+                                        TriggerServerEvent('motel:server:setDoorState', keydata.uniqueID)
+                                    end
+                                end, keydata.uniqueID)
                                 hasFound = true
                                 break
                             end
@@ -358,18 +358,51 @@ Citizen.CreateThread(function()
                     action = function()
                         QBCore.Functions.TriggerCallback('motels:GetCops', function(cops)
                             if cops >= Config.CopCount then
-                                TriggerEvent('qb-lockpick:client:openLockpick', function(success)
-                                    if success then 
-                                        Config.DoorlockAction(v.uniqueID, true)
-                                        v.doorLocked = false
-                                        Wait(10 * 60000)
-                                        Config.DoorlockAction(v.uniqueID, false)
-                                        v.doorLocked = true
-                                        TriggerEvent('police:client:policeAlert', GetEntityCoords(PlayerPedId()), 'Motel breakin reported!')
+                                if QBCore.Functions.HasItem(Config.Lockpick, 1) then
+                                    TaskStartScenarioInPlace(PlayerPedId(), 'PROP_HUMAN_PARKING_METER', 0, false)
+                                    exports['ps-ui']:Circle(function(success)
+                                        if success then
+                                            QBCore.Functions.TriggerCallback('motels:getDoorDate', function(data)
+                                                if data then
+                                                    if data.isLocked then
+                                                        local chance = math.random(1, 100)
+                                                        if chance <= Config.SuccessAlarmChance then
+                                                            if Config.PoliceAlert == 'qbdefault' then
+                                                                TriggerEvent('police:client:policeAlert', GetEntityCoords(PlayerPedId()), 'Suspicious activity reported')
+                                                            elseif Config.PoliceAlert == 'ps-dispatch' then
+                                                                exports['ps-dispatch']:HouseRobbery()
+                                                            end
+                                                        end
+
+                                                        if Config.DoorlockSystem == 'qb' then
+                                                            Config.DoorlockAction(keydata.uniqueID, not data.isLocked)
+                                                        end
+                                                        ClearPedTasks(PlayerPedId())
+                                                        TriggerServerEvent('motel:server:setDoorState', keydata.uniqueID)
+                                                    else
+                                                        QBCore.Functions.Notify('Can\'t break into an already unlocked door silly!', 'error', 3000)
+                                                    end
+                                                end
+                                            end, keydata.uniqueID)
+                                        else
+                                            ClearPedTasks(PlayerPedId())
+                                            QBCore.Functions.Notify('Failed at lockpicking door!', 'error', 3000)
+
+                                            if Config.PoliceAlert == 'qbdefault' then
+                                                TriggerEvent('police:client:policeAlert', GetEntityCoords(PlayerPedId()), 'Suspicious activity reported')
+                                            elseif Config.PoliceAlert == 'ps-dispatch' then
+                                                exports['ps-dispatch']:HouseRobbery()
+                                            end
+                                        end
+                                    end, math.random(3, 5), 15)
+
+                                    local loseChance = math.random(1, 100)
+                                    if loseChance <= Config.CopCount then
+                                        TriggerServerEvent('motel:server:loseLockpick')
                                     end
-                                    QBCore.Functions.Notify('Failed lockpicking room!', 'error', 3000)
-                                    TriggerEvent('police:client:policeAlert', GetEntityCoords(PlayerPedId()), 'Motel breakin reported!')
-                                end)
+                                else
+                                    QBCore.Functions.Notify('You don\'t have a lockpick!', 'error', 3000)
+                                end
                             else
                                 QBCore.Functions.Notify('Not enough cops on duty!', 'error', 3000)
                             end
@@ -395,11 +428,19 @@ Citizen.CreateThread(function()
                         label = 'Open Stash',
                         icon = 'fas fa-chest',
                         action = function()
-                            TriggerServerEvent('inventory:server:OpenInventory', 'stash', 'stash_' .. keydata.uniqueID, {
-                                maxweight = keydata.stashData['weight'],
-                                slots = keydata.stashData['slots'],
-                            })
-                            TriggerEvent('inventory:client:SetCurrentStash', 'stash_' .. keydata.uniqueID) 
+                            if Config.QBVersion == 'oldqb' then
+                                TriggerServerEvent('inventory:server:OpenInventory', 'stash', 'stash_' .. keydata.uniqueID, {
+                                    maxweight = keydata.stashData['weight'],
+                                    slots = keydata.stashData['slots'],
+                                })
+                                TriggerEvent('inventory:client:SetCurrentStash', 'stash_' .. keydata.uniqueID)
+                            else
+                                TriggerServerEvent('qb-inventory:server:OpenInventory', 'stash', 'stash_' .. keydata.uniqueID, {
+                                    maxweight = keydata.stashData['weight'],
+                                    slots = keydata.stashData['slots'],
+                                })
+                                TriggerEvent('qb-inventory:client:SetCurrentStash', 'stash_' .. keydata.uniqueID) 
+                            end
                         end
                     }
                 }

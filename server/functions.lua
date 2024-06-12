@@ -1,4 +1,5 @@
 local QBCore = exports['qb-core']:GetCoreObject()
+local doorInfo = {}
 
 QBCore.Functions.CreateCallback('rentedRooms', function(source, cb)
     local src = source
@@ -43,6 +44,27 @@ QBCore.Functions.CreateCallback('motels:GetCops', function(_, cb)
 		end
 	end
 	cb(amount)
+end)
+
+QBCore.Functions.CreateCallback('motels:getDoorDate', function(_, cb, uniqueID)
+    if doorInfo[uniqueID] then
+        cb(doorInfo[uniqueID])
+    else
+        if Config.Debug then
+            print('No match found for ' .. uniqueID .. '!')
+        end
+        cb(false)
+    end
+end)
+
+Citizen.CreateThread(function()
+    for k, v in pairs(Config.Rooms) do
+        for _, keyData in pairs(v) do
+            if not doorInfo[keyData.uniqueID] then
+                doorInfo[keyData.uniqueID] = {uniqueID = keyData.uniqueID, isLocked = keyData.doorLocked}
+            end
+        end
+    end
 end)
 
 Citizen.CreateThread(function()
@@ -202,7 +224,31 @@ RegisterNetEvent('jc-motels:server:rentRoom', function(motel, room, uniqueID, pr
         }
         Player.Functions.RemoveMoney('cash', price)
         Player.Functions.AddItem(Config.MotelKey, 1, nil, info)
-        TriggerClientEvent('inventory:client:ItemBox', src, QBCore.Shared.Items[Config.MotelKey], 'add')
+        if Config.QBVersion == 'oldqb' then
+            TriggerClientEvent('inventory:client:ItemBox', src, QBCore.Shared.Items[Config.MotelKey], 'add')
+        else
+            TriggerClientEvent('qb-inventory:client:ItemBox', src, QBCore.Shared.Items[Config.MotelKey], 'add')
+        end
+
+        MySQL.query('SELECT `owner`, `data` FROM `jc_ownedmotels`', {}, function(response)
+            if response and #response > 0 then
+                for i = 1, #response do
+                    local row = response[i]
+                    local owner = row.owner
+                    local data = json.decode(row.data)
+
+                    if data.motelID == motel then
+                        if owner and owner ~= '' then
+                            MySQL.update.await('UPDATE jc_ownedmotels SET funds = funds + ? WHERE owner = ? AND JSON_EXTRACT(data, "$.motelID") = ?', {
+                                price, owner, motel
+                            })
+                            break
+                        end
+                    end
+                end
+            end
+        end)
+
         QBCore.Functions.Notify(src, 'You successfully rented room ' .. room .. '!')
         TriggerClientEvent('jc-motels:client:rentedRoom', -1, motel, uniqueID, citizenid, fullName)
     end
@@ -413,6 +459,7 @@ RegisterNetEvent('jc-motels:server:buymotel', function(motel, data)
 
     if money >= data.price then
         local info = {
+            motelID = motel,
             name = data.label,
             roomprices = data.roomprices,
             autopay = data.autoPayment
@@ -422,5 +469,37 @@ RegisterNetEvent('jc-motels:server:buymotel', function(motel, data)
         TriggerClientEvent('jc-motels:client:buyMotel', -1, motel, citizenid)
     else
         QBCore.Functions.Notify(src, 'You don\'t have enough to buy this motel!', 'error', 3000)
+    end
+end)
+
+RegisterNetEvent('motel:server:setDoorState', function(uniqueID)
+    local hasFound = false
+    for key, value in pairs(doorInfo) do
+        if value.uniqueID == uniqueID then
+            value.isLocked = not value.isLocked
+            hasFound = true
+            if Config.DoorlockSystem == 'ox' then
+                exports['ox_doorlock']:setDoorState(uniqueId, value.isLocked)
+            end
+            break
+        end
+    end
+
+    if not hasFound then
+        if Config.Debug then
+            print('Could not find the door with UniqueID ' .. uniqueID)
+        end
+    end
+end)
+
+RegisterNetEvent('motel:server:loseLockpick', function()
+    local src = source
+    local Player = QBCore.Functions.GetPlayer(src)
+
+    Player.Functions.RemoveItem(Config.Lockpick, 1)
+    if Config.QBVersion == 'oldqb' then
+        TriggerClientEvent('inventory:client:ItemBox', source, QBCore.Shared.Items[Config.Lockpick], 'remove')
+    else
+        TriggerClientEvent('qb-inventory:client:ItemBox', source, QBCore.Shared.Items[Config.Lockpick], 'remove')
     end
 end)

@@ -2,13 +2,20 @@ Config = Config or {}
 
 Config.AppearanceScript = 'qb-clothes' -- qb-clothes or illenium-appearance
 
+Config.Debug = true -- For developers and troubleshooting issues
 Config.UseTarget = true -- Whether to use QB or OX Target or not
 Config.EnableRobbery = true -- Make it possible to break into motel rooms!
 Config.RestrictRooms = true -- If set to true, people can only rent 1 room at a time!
 Config.RestrictMotels = true -- If set to true, people cna only buy 1 motel at a time!
 Config.Lockpick = 'lockpick' -- Item to lockpick doors if Config.EnableRobbery is set to true!
 Config.MotelKey = 'motelkey' -- The item used for motel keys!
-Config.CopCount = 2 -- How many cops required to break into a motel room if Config.EnableRobbery is set to true!
+Config.CopCount = 0 -- How many cops required to break into a motel room if Config.EnableRobbery is set to true!
+Config.LockpickLoseChance = 0 -- How high chance to lose lockpick when breaking into house(Can be set to 100 and 0)
+Config.SuccessAlarmChance = 75 -- How high a chance police alert will be reported if lockpicking a motel room is succeesfull.
+Config.PoliceAlert = 'qbdefault' -- The current modules are; 'qbdefault', 'ps-dispatch'
+Config.QBVersion = 'oldqb' -- The current are 'newqb' or 'oldqb' these is mainly inventory handling related!
+
+Config.DoorlockSystem = 'qb' -- Current options are; 'qb', 'ox'
 
 Config.Motels = {
     ['davismotel'] = { -- The unique id of the motel!
