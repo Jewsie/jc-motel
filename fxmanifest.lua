@@ -23,6 +23,7 @@ client_scripts {
 	'@PolyZone/CircleZone.lua',
 	'@PolyZone/ComboZone.lua',
     'client/target_main.lua',
+    'client/main.lua',
     'client/functions.lua',
 }
 

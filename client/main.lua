@@ -1,7 +1,9 @@
 local QBCore = exports['qb-core']:GetCoreObject()
+local motels = {}
+local rooms = {}
 
 Citizen.CreateThread(function()
-    if Config.UseTarget then
+    if not Config.UseTarget then
         local isLoggedIn = false
         while not isLoggedIn do
             Wait(1)
@@ -14,6 +16,11 @@ Citizen.CreateThread(function()
         for k, v in pairs(Config.Motels) do
             local PlayerData = QBCore.Functions.GetPlayerData()
             local globalData = {}
+            
+            motels[k] = BoxZone:Create(v.coords, 1.5, 1.5, {
+                name = k,
+                debugPoly = false
+            })
 
             globalData[#globalData + 1] = {
                 title = 'Manage Motel',
@@ -169,7 +176,6 @@ Citizen.CreateThread(function()
                     end
                 end
             }
-
             globalData[#globalData + 1] = {
                 title = 'Rent Motel Room',
                 description = 'Rent a motel room!',
@@ -218,7 +224,6 @@ Citizen.CreateThread(function()
                     lib.showContext('rent_room')
                 end
             }
-
             globalData[#globalData + 1] = {
                 title = 'Rented Rooms',
                 description = 'Check motel rooms you have rented!',
@@ -326,7 +331,6 @@ Citizen.CreateThread(function()
                     end)
                 end
             }
-
             if v.owner == '' and v.price or v.owner == '' and v.price >= 0 then
                 globalData[#globalData + 1] = {
                     title = 'Buy Motel',
@@ -355,38 +359,38 @@ Citizen.CreateThread(function()
                     end
                 }
             end
-            
-            exports['qb-target']:AddCircleZone('motel_' .. k, v.coords, 1.5, {
-                name = 'motel_' .. k,
-                useZ = true,
-                debugPoly = false,
-            }, {
-                options = {
-                    {
-                        label = 'Open Reception',
-                        icon = 'fas fa-desk',
-                        action = function()
+
+            motels[k]:onPlayerInOut(function(onInsideOut)
+                if onInsideOut then
+                    local pos = GetEntityCoords(PlayerPedId())
+                    while #(pos - v.coords) <= 2.0 do
+                        Wait(0)
+                        pos = GetEntityCoords(PlayerPedId())
+                        lib.showTextUI('[E] To Interact')
+
+                        if IsControlJustPressed(0, 38) then
                             lib.registerContext({
-                                id = 'open_motel',
-                                title = 'Open Motel Reception',
+                                id = k,
+                                title = v.label,
                                 options = globalData
                             })
-                            lib.showContext('open_motel')
+                            lib.showContext(k)
                         end
-                    }
-                },
-                distance = 1.5,
-            })
+                    end
+                    lib.hideTextUI()
+                end
+            end)
         end
 
         for k, v in pairs(Config.Rooms) do
+            rooms[k] = {door = '', stash = '', wardrobe = ''}
             for _, keydata in pairs(v) do
                 local tableData = {}
-            
+
                 tableData[#tableData + 1] = {
-                    label = 'Lock/Unlock Door',
-                    icon = 'fas fa-key',
-                    action = function()
+                    title = 'Toggle Doorlock',
+                    description = 'Toggle the doorlock for door!',
+                    onSelect = function()
                         local PlayerData = QBCore.Functions.GetPlayerData()
                         local items = PlayerData.items
                         local hasFound = false
@@ -422,12 +426,11 @@ Citizen.CreateThread(function()
                         end
                     end
                 }
-        
                 if Config.EnableRobbery then
                     tableData[#tableData + 1] = {
-                        label = 'Break into room',
-                        icon = 'fas fa-doorlock',
-                        action = function()
+                        title = 'Break into room',
+                        description = 'Break into the motel room!',
+                        onSelect = function()
                             QBCore.Functions.TriggerCallback('motels:GetCops', function(cops)
                                 if cops >= Config.CopCount then
                                     if QBCore.Functions.HasItem(Config.Lockpick, 1) then
@@ -482,56 +485,76 @@ Citizen.CreateThread(function()
                         end
                     }
                 end
-                exports['qb-target']:AddCircleZone('room_' .. keydata.uniqueID, keydata.doorPos, 1.5, {
-                    name = 'room_' .. keydata.uniqueID,
-                    useZ = true,
-                    debugPoly = false,
-                }, {
-                    options = tableData,
-                    distance = 1.5,
+
+                rooms[k] = BoxZone:Create(keydata.doorPos, 1.0, 1.0, {
+                    name = k,
+                    debugPoly = false
+                })
+                rooms[k .. '_stash'] = BoxZone:Create(keydata.stashPos, 1.0, 1.0, {
+                    name = k,
+                    debugPoly = false
+                })
+                rooms[k .. '_wardrobe'] = BoxZone:Create(keydata.wardrobePos, 1.0, 1.0, {
+                    name = k,
+                    debugPoly = false
                 })
 
-                exports['qb-target']:AddCircleZone('storage_' .. keydata.uniqueID, keydata.stashPos, 0.5, {
-                    name = 'storage_' .. keydata.uniqueID,
-                    useZ = true,
-                    debugPoly = false,
-                }, {
-                    options = {
-                        {
-                            label = 'Open Stash',
-                            icon = 'fas fa-chest',
-                            action = function()
+                rooms[k]:onPlayerInOut(function(onInsideOut)
+                    if onInsideOut then
+                        local pos = GetEntityCoords(PlayerPedId())
+                        while #(pos - keydata.doorPos) <= 2.0 do
+                            Wait(0)
+                            pos = GetEntityCoords(PlayerPedId())
+                            lib.showTextUI('[E] To Interact')
+
+                            if IsControlJustPressed(0, 38) then
+                                lib.registerContext({
+                                    id = k .. '_door',
+                                    title = 'Motel Room',
+                                    options = tableData
+                                })
+                                lib.showContext(k .. '_door')
+                            end
+                        end
+                        lib.hideTextUI()
+                    end
+                end)
+                rooms[k .. '_stash']:onPlayerInOut(function(onInsideOut)
+                    if onInsideOut then
+                        local pos = GetEntityCoords(PlayerPedId())
+                        while #(pos - keydata.stashPos) <= 2.0 do
+                            Wait(0)
+                            pos = GetEntityCoords(PlayerPedId())
+                            lib.showTextUI('[E] To open stash')
+
+                            if IsControlJustPressed(0, 38) then
                                 if Config.InventorySystem == 'qs' then
                                     TriggerServerEvent('jc-motel:server:openInventory', keydata.uniqueID, keydata.stashData['weight'], keydata.stashData['slots'], 'qs')
                                 else
                                     TriggerServerEvent('jc-motel:server:openInventory', keydata.uniqueID, keydata.stashData['weight'], keydata.stashData['slots'], 'qb')
                                 end
                             end
-                        }
-                    },
-                    distance = 0.5,
-                })
-
-                exports['qb-target']:AddCircleZone('wardrobe_' .. keydata.uniqueID, keydata.wardrobePos, 1.5, {
-                    name = 'wardrobe_' .. keydata.uniqueID,
-                    useZ = true,
-                    debugPoly = false,
-                }, {
-                    options = {
-                        {
-                            label = 'Open Wardrobe',
-                            icon = 'fas fa-wardrobe',
-                            action = function()
-                                if Config.AppearanceScript == 'illenium-appearance' then
-                                    TriggerEvent('qb-clothing:client:openOutfitMenu')
-                                elseif Config.AppearanceScript == 'qb-clothes' then
-                                    TriggerEvent('qb-clothing:client:openOutfitMenu')
-                                end
+                        end
+                        lib.hideTextUI()
+                    end
+                end)
+                rooms[k .. '_wardrobe']:onPlayerInOut(function(onInsideOut)
+                    if onInsideOut then
+                        local pos = GetEntityCoords(PlayerPedId())
+                        while (#pos - keydata.wardrobePos) <= 2.0 do
+                            Wait(0)
+                            pos = GetEntityCoords(PlayerPedId())
+                            lib.showTextUI('[E] To open wardrobe')
+                            
+                            if Config.AppearanceScript == 'illenium-appearance' then
+                                TriggerEvent('qb-clothing:client:openOutfitMenu')
+                            elseif Config.AppearanceScript == 'qb-clothes' then
+                                TriggerEvent('qb-clothing:client:openOutfitMenu')
                             end
-                        }
-                    },
-                    distance = 1.5,
-                })
+                        end
+                        lib.hideTextUI()
+                    end
+                end)
             end
         end
     end
