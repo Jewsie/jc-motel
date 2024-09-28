@@ -30,24 +30,13 @@ Config.Motels = {
         payInterval = 168, -- Interval for every payment in hours.
         keyPrice = 200 -- The price to get a new key if lost
     },
-    ['mrpd'] = { -- The unique id of the motel!
-        autoPayment = false, -- Whether payment will be taken from renters automatically or not. Can be changed by motel owners if buying motels is enabled!
-        label = 'Mission Row Police Department', -- Simply the name of the motel!
-        coords = vector3(440.55, -981.13, 30.69), -- Where the blink and reception will be located
-        owner = '', -- Unless you want a permanent owner, leave nil.
-        funds = 0, -- Leave 0 unless you want the start capital to be more than 0!
-        price = 250000, -- The price to buy the motel itself! Leave nil if not for sale!
-        roomprices = 250, -- Prices for each room each interval
-        payInterval = 168, -- Interval for every payment in hours.
-        keyPrice = 200 -- The price to get a new key if lost
-    }
 }
 
 Config.Rooms = {
     ['bayviewlodge'] = {
         {
             room = 'Room #1', -- Just the name of the room
-            uniqueID = 'motel_D1', -- Has to match the name of the DoorID in qb-doorlock Config!
+            uniqueID = 'motel_D1', -- Has to match the name of the DoorID in qb-doorlock or ox doorid Config!
             doorPos = vector3(-710.1, 5768.33, 17.83), -- The location where the door is!
             stashPos = vector3(-710.96, 5767.11, 17.52), -- The location of the stash for the player!
             wardrobePos = vector3(-708.2, 5766.31, 17.51), -- The location of the wardrobe!
@@ -186,22 +175,6 @@ Config.Rooms = {
             renterName = '',
         },
     },
-    ['mrpd'] = {
-        {
-            room = 'Room #1', -- Just the name of the room
-            uniqueID = 1, -- Has to match the name of the DoorID in qb-doorlock Config!
-            doorPos = vector3(446.57, -980.01, 30.83), -- The location where the door is!
-            stashPos = vector3(-710.96, 5767.11, 17.52), -- The location of the stash for the player!
-            wardrobePos = vector3(-708.2, 5766.31, 17.51), -- The location of the wardrobe!
-            doorLocked = true, -- Whether the door starts locked or not, need to be set the same as in the qb-doorlock Config file!
-            stashData = {
-                weight = 100000, -- The amount of weight 100000 = 100 KG
-                slots = 50, -- The amount of slots you wanna give your players!
-            },
-            renter = nil, -- Unless you want a permanent renter, leave nil.
-            renterName = '', -- Leave this be blank!
-        },
-    }
 }
 
 function Config.DoorlockAction(doorId, setLocked)
