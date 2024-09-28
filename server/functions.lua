@@ -597,3 +597,7 @@ RegisterNetEvent('jc-motels:server:sellMotel', function(motel, paymethode, price
     Player.Functions.AddMoney(paymethode, price)
     MySQL.query.await('DELETE FROM `jc_ownedmotels` WHERE JSON_EXTRACT(`data`, "$.motelID") = ?', {motel})
 end)
+
+RegisterNetEvent('jc-motels:server:setDoorStateOx', function(doorId, state)
+    exports['ox_doorlock']:setDoorState(doorId, state)
+end)

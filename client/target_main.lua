@@ -402,9 +402,7 @@ Citizen.CreateThread(function()
                                     Wait(300)
                                     QBCore.Functions.TriggerCallback('motels:getDoorDate', function(data)
                                         if data then
-                                            if Config.DoorlockSystem == 'qb' then
-                                                Config.DoorlockAction(keydata.uniqueID, not data.isLocked)
-                                            end
+                                            Config.DoorlockAction(keydata.uniqueID, not data.isLocked)
                                             ClearPedTasks(PlayerPedId())
                                             TriggerServerEvent('motel:server:setDoorState', keydata.uniqueID)
                                         end
@@ -430,7 +428,14 @@ Citizen.CreateThread(function()
                         action = function()
                             QBCore.Functions.TriggerCallback('motels:GetCops', function(cops)
                                 if cops >= Config.CopCount then
-                                    if QBCore.Functions.HasItem(Config.Lockpick, 1) then
+                                    local hasItem = nil
+                                    if Config.InventorySystem == 'qb' then
+                                        hasItem = QBCore.Functions.HasItem(Config.Lockpick, 1)
+                                    else
+                                        hasItem = exports['ps-inventory']:HasItem(Config.Lockpick, 1)
+                                    end
+
+                                    if hasItem then
                                         TaskStartScenarioInPlace(PlayerPedId(), 'PROP_HUMAN_PARKING_METER', 0, false)
                                         exports['ps-ui']:Circle(function(success)
                                             if success then
@@ -503,8 +508,14 @@ Citizen.CreateThread(function()
                             action = function()
                                 if Config.InventorySystem == 'qs' then
                                     TriggerServerEvent('jc-motel:server:openInventory', keydata.uniqueID, keydata.stashData['weight'], keydata.stashData['slots'], 'qs')
-                                else
+                                elseif Config.InventorySystem == 'qb' then
                                     TriggerServerEvent('jc-motel:server:openInventory', keydata.uniqueID, keydata.stashData['weight'], keydata.stashData['slots'], 'qb')
+                                elseif Config.InventorySystem == 'ps' then
+                                    TriggerServerEvent('inventory:server:OpenInventory', 'stash', keydata.uniqueID, {
+                                        maxweight = keydata.stashData['weight'],
+                                        slots = keydata.stashData['slots'],
+                                    })
+                                    TriggerEvent('inventory:client:SetCurrentStash', 'keydata.uniqueID')
                                 end
                             end
                         }

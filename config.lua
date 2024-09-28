@@ -1,29 +1,39 @@
 Config = Config or {}
 
-Config.AppearanceScript = 'qb-clothes' -- qb-clothes or illenium-appearance
-
 Config.Debug = true -- For developers and troubleshooting issues
-Config.UseTarget = false -- Whether to use QB or OX Target or not
+Config.UseTarget = true -- Whether to use QB or OX Target or not
 Config.EnableRobbery = true -- Make it possible to break into motel rooms!
 Config.RestrictRooms = true -- If set to true, people can only rent 1 room at a time!
 Config.RestrictMotels = true -- If set to true, people cna only buy 1 motel at a time!
 Config.WipeStash = true -- Remove stash when room is no longere rented!
 Config.AllowAutoPay = false -- Allow people to enable automatic payment for their motel or not!
 Config.Lockpick = 'lockpick' -- Item to lockpick doors if Config.EnableRobbery is set to true!
-Config.MotelKey = 'motelkey' -- The item used for motel keys!
+Config.MotelKey = 'lockpick' -- The item used for motel keys!
 Config.CopCount = 0 -- How many cops required to break into a motel room if Config.EnableRobbery is set to true!
 Config.LockpickLoseChance = 0 -- How high chance to lose lockpick when breaking into house(Can be set to 100 and 0)
 Config.SuccessAlarmChance = 75 -- How high a chance police alert will be reported if lockpicking a motel room is succeesfull.
+Config.AppearanceScript = 'qb-clothes' -- qb-clothes or illenium-appearance
 Config.PoliceAlert = 'qbdefault' -- The current modules are; 'qbdefault', 'ps-dispatch'
 Config.QBVersion = 'newqb' -- The current are 'newqb' or 'oldqb' these is mainly inventory handling related!
-Config.DoorlockSystem = 'qb' -- Current options are; 'qb', 'ox'
-Config.InventorySystem = 'qs' -- qb, qs or ps
+Config.DoorlockSystem = 'ox' -- Current options are; 'qb', 'ox'
+Config.InventorySystem = 'qb' -- qb, qs or ps
 
 Config.Motels = {
     ['bayviewlodge'] = { -- The unique id of the motel!
         autoPayment = false, -- Whether payment will be taken from renters automatically or not. Can be changed by motel owners if buying motels is enabled!
         label = 'Bayview Lodge', -- Simply the name of the motel!
         coords = vector3(-695.44, 5802.24, 17.33), -- Where the blink and reception will be located
+        owner = '', -- Unless you want a permanent owner, leave nil.
+        funds = 0, -- Leave 0 unless you want the start capital to be more than 0!
+        price = 250000, -- The price to buy the motel itself! Leave nil if not for sale!
+        roomprices = 250, -- Prices for each room each interval
+        payInterval = 168, -- Interval for every payment in hours.
+        keyPrice = 200 -- The price to get a new key if lost
+    },
+    ['mrpd'] = { -- The unique id of the motel!
+        autoPayment = false, -- Whether payment will be taken from renters automatically or not. Can be changed by motel owners if buying motels is enabled!
+        label = 'Mission Row Police Department', -- Simply the name of the motel!
+        coords = vector3(440.55, -981.13, 30.69), -- Where the blink and reception will be located
         owner = '', -- Unless you want a permanent owner, leave nil.
         funds = 0, -- Leave 0 unless you want the start capital to be more than 0!
         price = 250000, -- The price to buy the motel itself! Leave nil if not for sale!
@@ -175,9 +185,29 @@ Config.Rooms = {
             renter = nil,
             renterName = '',
         },
+    },
+    ['mrpd'] = {
+        {
+            room = 'Room #1', -- Just the name of the room
+            uniqueID = 1, -- Has to match the name of the DoorID in qb-doorlock Config!
+            doorPos = vector3(446.57, -980.01, 30.83), -- The location where the door is!
+            stashPos = vector3(-710.96, 5767.11, 17.52), -- The location of the stash for the player!
+            wardrobePos = vector3(-708.2, 5766.31, 17.51), -- The location of the wardrobe!
+            doorLocked = true, -- Whether the door starts locked or not, need to be set the same as in the qb-doorlock Config file!
+            stashData = {
+                weight = 100000, -- The amount of weight 100000 = 100 KG
+                slots = 50, -- The amount of slots you wanna give your players!
+            },
+            renter = nil, -- Unless you want a permanent renter, leave nil.
+            renterName = '', -- Leave this be blank!
+        },
     }
 }
 
 function Config.DoorlockAction(doorId, setLocked)
-    TriggerServerEvent('qb-doorlock:server:updateState', doorId, setLocked, false, false, true, false, false)
+    if Config.DoorlockSystem == 'qb' then
+        TriggerServerEvent('qb-doorlock:server:updateState', doorId, setLocked, false, false, true, false, false)
+    elseif Config.DoorlockSystem == 'ox' then
+        TriggerServerEvent('jc-motels:server:setDoorStateOx', doorId, setLocked)
+    end
 end
