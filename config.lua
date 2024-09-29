@@ -17,13 +17,15 @@ Config.PoliceAlert = 'qbdefault' -- The current modules are; 'qbdefault', 'ps-di
 Config.QBVersion = 'newqb' -- The current are 'newqb' or 'oldqb' these is mainly inventory handling related!
 Config.DoorlockSystem = 'ox' -- Current options are; 'qb', 'ox'
 Config.InventorySystem = 'qb' -- qb, qs or ps
+Config.TargetScript = 'qb' -- What targetting script you're currently using! 'qb', 'ox'
+Config.PolyZone = 'ox' -- What polyzone script system to use 'PolyZone' or 'ox' Only if Config.UseTarget is set to false
 
 Config.Motels = {
     ['bayviewlodge'] = { -- The unique id of the motel!
         autoPayment = false, -- Whether payment will be taken from renters automatically or not. Can be changed by motel owners if buying motels is enabled!
         label = 'Bayview Lodge', -- Simply the name of the motel!
         coords = vector3(-695.44, 5802.24, 17.33), -- Where the blink and reception will be located
-        owner = '', -- Unless you want a permanent owner, leave nil.
+        owner = nil, -- Unless you want a permanent owner, leave nil.
         funds = 0, -- Leave 0 unless you want the start capital to be more than 0!
         price = 250000, -- The price to buy the motel itself! Leave nil if not for sale!
         roomprices = 250, -- Prices for each room each interval

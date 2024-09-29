@@ -1,6 +1,6 @@
 local QBCore = exports['qb-core']:GetCoreObject()
 
-if Config.TargetScript == 'qb' then
+if Config.TargetScript == 'ox' then
     RegisterNetEvent('jc-motel:client:AddTargetMotel', function(k, v)
         local PlayerData = QBCore.Functions.GetPlayerData()
         local globalData = {}
@@ -37,17 +37,17 @@ if Config.TargetScript == 'qb' then
                 end
             }
         end
-        
-        exports['qb-target']:AddCircleZone('motel_' .. k, v.coords, 1.5, {
+
+        exports['ox_target']:addSphereZone({
+            coords = v.coords,
             name = 'motel_' .. k,
-            useZ = true,
-            debugPoly = false,
-        }, {
+            radius = 1.5,
+            debug = false,
             options = {
                 {
                     label = 'Open Reception',
                     icon = 'fas fa-desk',
-                    action = function()
+                    onSelect = function()
                         lib.registerContext({
                             id = 'open_motel',
                             title = 'Open Motel Reception',
@@ -57,12 +57,11 @@ if Config.TargetScript == 'qb' then
                     end
                 }
             },
-            distance = 1.5,
         })
     end)
 
     RegisterNetEvent('jc-motels:client:removeTargetZone', function(k, data)
-        exports['qb-target']:RemoveZone(k)
+        exports['ox_target']:removeZone(k)
         for key, v in pairs(Config.Motels) do
             if key == k then
                 TriggerEvent('jc-motel:client:AddTargetMotel', key, v)
@@ -92,7 +91,7 @@ if Config.TargetScript == 'qb' then
                     tableData[#tableData + 1] = {
                         label = 'Lock/Unlock Door',
                         icon = 'fas fa-key',
-                        action = function()
+                        onSelect = function()
                             local PlayerData = QBCore.Functions.GetPlayerData()
                             local items = PlayerData.items
                             local hasFound = false
@@ -131,7 +130,7 @@ if Config.TargetScript == 'qb' then
                         tableData[#tableData + 1] = {
                             label = 'Break into room',
                             icon = 'fas fa-doorlock',
-                            action = function()
+                            onSelect = function()
                                 QBCore.Functions.TriggerCallback('motels:GetCops', function(cops)
                                     if cops >= Config.CopCount then
                                         local hasItem = nil
@@ -193,25 +192,24 @@ if Config.TargetScript == 'qb' then
                             end
                         }
                     end
-                    exports['qb-target']:AddCircleZone('room_' .. keydata.uniqueID, keydata.doorPos, 1.5, {
+                    exports['ox_target']:addSphereZone({
+                        coords = keydata.doorPos,
+                        radius = 1.5,
                         name = 'room_' .. keydata.uniqueID,
-                        useZ = true,
-                        debugPoly = false,
-                    }, {
+                        debug = false,
                         options = tableData,
-                        distance = 1.5,
                     })
 
-                    exports['qb-target']:AddCircleZone('storage_' .. keydata.uniqueID, keydata.stashPos, 0.5, {
+                    exports['ox_target']:addSphereZone({
                         name = 'storage_' .. keydata.uniqueID,
-                        useZ = true,
-                        debugPoly = false,
-                    }, {
+                        coords = keydata.stashPos,
+                        debug = false,
+                        radius = 0.5,
                         options = {
                             {
                                 label = 'Open Stash',
                                 icon = 'fas fa-chest',
-                                action = function()
+                                onSelect = function()
                                     StashHandler(keydata.stashPos, keydata.uniqueID, keydata.stashData['weight'], keydata.stashData['slots'])
                                 end
                             }
@@ -219,21 +217,20 @@ if Config.TargetScript == 'qb' then
                         distance = 0.5,
                     })
 
-                    exports['qb-target']:AddCircleZone('wardrobe_' .. keydata.uniqueID, keydata.wardrobePos, 1.5, {
+                    exports['ox_target']:addSphereZone({
+                        coords = keydata.wardrobePos,
                         name = 'wardrobe_' .. keydata.uniqueID,
-                        useZ = true,
-                        debugPoly = false,
-                    }, {
+                        radius = 1.5,
+                        debug = false,
                         options = {
                             {
                                 label = 'Open Wardrobe',
                                 icon = 'fas fa-wardrobe',
-                                action = function()
+                                onSelect = function()
                                     WardrobeHandler(keydata.wardrobePos)
                                 end
                             }
                         },
-                        distance = 1.5,
                     })
                 end
             end

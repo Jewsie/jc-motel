@@ -208,6 +208,7 @@ RegisterNetEvent('jc-motels:server:checkOwnedMotels', function()
             end
         end
     end)
+    TriggerClientEvent('jc-motels:client:intiateMotels', src)
 end)
 
 RegisterNetEvent('jc-motels:server:rentRoom', function(motel, room, uniqueID, price, payInterval, payMethode)
@@ -508,6 +509,8 @@ RegisterNetEvent('jc-motels:server:buymotel', function(motel, data, paymethode)
         local inserQuery = MySQL.insert.await('INSERT INTO `jc_ownedmotels` (owner, funds, data) VALUES (?, ?, ?)', {citizenid, 0, json.encode(info)})
         Player.Functions.RemoveMoney(paymethode, data.price)
         TriggerClientEvent('jc-motels:client:buyMotel', -1, motel, citizenid)
+        TriggerClientEvent('jc-motels:client:removeTargetZone', -1, motel, data)
+        TriggerClientEvent('jc-motel:client:removezones', -1, motel, data)
     else
         QBCore.Functions.Notify(src, 'You don\'t have enough to buy this motel!', 'error', 3000)
     end
@@ -596,6 +599,9 @@ RegisterNetEvent('jc-motels:server:sellMotel', function(motel, paymethode, price
 
     Player.Functions.AddMoney(paymethode, price)
     MySQL.query.await('DELETE FROM `jc_ownedmotels` WHERE JSON_EXTRACT(`data`, "$.motelID") = ?', {motel})
+    TriggerClientEvent('jc-motels:client:removeOwner', -1, motel)
+    Wait(100)
+    TriggerClientEvent('jc-motels:client:removeTargetZone', -1, motel)
 end)
 
 RegisterNetEvent('jc-motels:server:setDoorStateOx', function(doorId, state)

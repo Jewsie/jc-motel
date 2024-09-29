@@ -22,9 +22,11 @@ client_scripts {
 	'@PolyZone/EntityZone.lua',
 	'@PolyZone/CircleZone.lua',
 	'@PolyZone/ComboZone.lua',
-    'client/target_main.lua',
-    'client/main.lua',
     'client/functions.lua',
+    'client/target_main.lua',
+    'client/target_ox.lua',
+    'client/main.lua',
+    'client/ox_polyzone.lua',
 }
 
 lua54 'yes'
