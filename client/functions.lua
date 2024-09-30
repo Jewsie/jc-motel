@@ -71,23 +71,29 @@ function ManageMotelHandler(k, v)
                     description = 'Manage your rented rooms!',
                     onSelect = function()
                         local roomData = {}
-                        for key, r in pairs(Config.Rooms[k]) do
-                            if r.renter then
-                                roomData[#roomData + 1] = {
-                                    title = r.room,
-                                    descrption = 'Click to kick out renter!\n' .. 'Renter: ' .. r.renterName,
-                                    onSelect = function()
-                                        TriggerServerEvent('jc-motels:server:kickoutRenter', r.uniqueID)
-                                    end
-                                }
+                        QBCore.Functions.TriggerCallback('motels:rentedRooms', function(data)
+                            if data then
+                                for _, r in pairs(data) do
+                                    roomData[#roomData + 1] = {
+                                        title = r.room,
+                                        description = 'Click to kick out renter!\n Renter: ' .. r.renterName,
+                                        onSelect = function()
+                                            TriggerServerEvent('jc-motels:server:kickoutRenter', k, r.renter, r.room)
+                                        end
+                                    }
+                                end
+
+                                lib.registerContext({
+                                    id = 'manage_renters',
+                                    title = 'Manage Renters',
+                                    options = roomData
+                                })
+                                lib.showContext('manage_renters')
+                            else
+                                QBCore.Functions.Notify('No rooms rented!', 'error', 3000)
+                                return
                             end
-                        end
-                        lib.registerContext({
-                            id = 'manage_renters',
-                            title = 'Manage Renters',
-                            options = roomData
-                        })
-                        lib.showContext('manage_renters')
+                        end, k)
                     end
                 },
                 {
@@ -354,6 +360,103 @@ function RentedRoomsHandler(k, v)
                     }
                 })
                 lib.showContext('rented_rooms')
+            else
+                local roomData = {}
+                for _, val in pairs(data) do
+                    roomData[#roomData + 1] = {
+                        title = val.room,
+                        description = 'Manage your motel room!\n Payment due ' .. string.format("%d days", math.floor(val.duration / 24)),
+                        onSelect = function()
+                            lib.registerContext({
+                                id = val.uniqueid,
+                                title = val.room,
+                                options = {
+                                    {
+                                        title = 'Extend Renting Periode',
+                                        description = 'Pay $' .. v.roomprices,
+                                        onSelect = function()
+                                            if val.duration <= 24 then
+                                                lib.registerContext({
+                                                    id = 'pay_rent',
+                                                    title = 'Pay Rent for ' .. val.room,
+                                                    options = {
+                                                        {
+                                                            title = 'Confirm',
+                                                            description = 'Confirm payment on room',
+                                                            onSelect = function()
+                                                                local PlayerData = QBCore.Functions.GetPlayerData()
+                                                                local money = PlayerData.money['cash']
+
+                                                                if money >= v.roomprices then
+                                                                    TriggerServerEvent('jc-motels:server:payRent', val.uniqueid, v.roomprices, v.payInterval)
+                                                                else
+                                                                    QBCore.Functions.Notify('You can\'t afford to extend your rent!', 'error', 3000)
+                                                                end
+                                                            end
+                                                        },
+                                                        {
+                                                            title = 'Cancel',
+                                                            description = 'Cancel payment of motel room',
+                                                            onSelect = function() end
+                                                        }
+                                                    }
+                                                })
+                                                lib.showContext('pay_rent')
+                                            else
+                                                QBCore.Functions.Notify('You can only pay when there\'s is 1 day or less left!', 'error', 3000)
+                                            end
+                                        end
+                                    },
+                                    {
+                                        title = 'End Rent',
+                                        description = 'End your renting periode with the motel immediately!',
+                                        onSelect = function()
+                                            TriggerServerEvent('jc-motels:server:endRent', val.uniqueid, val.room)
+                                        end
+                                    },
+                                    {
+                                        title = 'Lost Key',
+                                        description = 'If you have lost a key, you can get a new!',
+                                        onSelect = function()
+                                            local PlayerData = QBCore.Functions.GetPlayerData()
+                                            local money = PlayerData.money['cash']
+                                            local bank = PlayerData.money['bank']
+
+                                            local input = lib.inputDialog('Replace Key', {
+                                                {
+                                                    type = 'select',
+                                                    label = 'Payment Methode',
+                                                    description = 'Pay through bank or card',
+                                                    options = {
+                                                        {value = 'bank', label = 'Bank'},
+                                                        {value = 'cash', label = 'Cash'}
+                                                    },
+                                                    required = true
+                                                }
+                                            })
+
+                                            if money >= v.keyPrice and input[1] == 'cash' then
+                                                TriggerServerEvent('jc-motels:server:replaceKey', val.room, data.uniqueid, v.keyPrice, input[1])
+                                            elseif bank >= v.keyPrice and input[1] == 'bank' then
+                                                TriggerServerEvent('jc-motels:server:replaceKey', val.room, val.uniqueid, v.keyPrice, input[1])
+                                            else
+                                                QBCore.Functions.Notify('You can\'t afford to replace your key!', 'error', 3000)
+                                            end
+                                        end
+                                    }
+                                }
+                            })
+                            lib.showContext(val.uniqueid)
+                        end
+                    }
+                    
+                    lib.registerContext({
+                        id = 'manage_rented_rooms',
+                        title = 'Rented Rooms',
+                        options = roomData
+                    })
+                    lib.showContext('manage_rented_rooms')
+                end
             end
         end
     end)
@@ -373,7 +476,6 @@ function BuyMotelHandler(k, v)
             required = true
         }
     })
-    print('Owner:', tostring(v.owner))
     if not v.owner or v.owner == '' and PlayerData.money[input[1]] >= v.price then
         TriggerServerEvent('jc-motels:server:buymotel', k, v, input[1])
     else

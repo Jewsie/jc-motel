@@ -1,13 +1,35 @@
 local QBCore = exports['qb-core']:GetCoreObject()
 local doorInfo = {}
 
+QBCore.Functions.CreateCallback('motels:rentedRooms', function(source, cb, motel)
+    local tableData = {}
+    MySQL.query('SELECT `motel`, `room`, `uniqueid`, `renter`, `renterName`, `duration` FROM `jc_motels` WHERE `motel` = ?', {tostring(motel)}, function(response)
+        if response and #response > 0 then
+            for i = 1, #response do
+                local row = response[i]
+                tableData[#tableData + 1] = {
+                    motel = row.motel,
+                    room = row.room,
+                    uniqueid = row.uniqueid,
+                    renter = row.renter,
+                    renterName = row.renterName,
+                    duration = row.duration
+                }
+            end
+            cb(tableData)
+        else
+            cb(false)
+        end
+    end)
+end)
+
 QBCore.Functions.CreateCallback('rentedRooms', function(source, cb)
     local src = source
     local Player = QBCore.Functions.GetPlayer(src)
     local tableData = {}
 
     MySQL.query('SELECT `motel`, `room`, `uniqueid`, `renter`, `duration` FROM `jc_motels` WHERE `renter` = ?', {Player.PlayerData.citizenid}, function(response)
-        if response and # response > 0 then
+        if response and #response > 0 then
             for i = 1, #response do
                 local row = response[i]
                 if Config.RestrictRooms then
@@ -217,6 +239,14 @@ RegisterNetEvent('jc-motels:server:rentRoom', function(motel, room, uniqueID, pr
     local citizenid = Player.PlayerData.citizenid
     local fullName = Player.PlayerData.charinfo.firstname .. ' ' .. Player.PlayerData.charinfo.lastname
 
+    if Config.RestrictRooms then
+        local response = MySQL.query.await('SELECT `motel` FROM `jc_motels` WHERE `renter` = ?', {citizenid})
+        if response and #response > 0 then
+            QBCore.Functions.Notify(src, 'You\'re already renting a room here!', 'error', 3000)
+            return
+        end
+    end
+
     local insertQuery = MySQL.insert.await('INSERT INTO `jc_motels` (motel, room, uniqueid, renter, renterName, duration) VALUES (?, ?, ?, ?, ?, ?)', {motel, room, uniqueID, citizenid, fullName, payInterval})
     if insertQuery then
         local info = {
@@ -228,7 +258,7 @@ RegisterNetEvent('jc-motels:server:rentRoom', function(motel, room, uniqueID, pr
             exports['qs-inventory']:AddItem(src, Config.MotelKey, 1, nil, info)
             TriggerClientEvent('qs-inventory:client:ItemBox', src, QBCore.Shared.Items[Config.MotelKey], 'add')
         else
-            Player.Functions.AddItem(Config.MotelKey, 1, nil, info)
+            exports['qb-inventory']:AddItem(src, Config.MotelKey, 1, false, info, 'qb-inventory:addKey')
         end
 
         if Config.QBVersion == 'oldqb' then
@@ -237,24 +267,23 @@ RegisterNetEvent('jc-motels:server:rentRoom', function(motel, room, uniqueID, pr
             TriggerClientEvent('qb-inventory:client:ItemBox', src, QBCore.Shared.Items[Config.MotelKey], 'add')
         end
 
-        MySQL.query('SELECT `owner`, `data` FROM `jc_ownedmotels`', {}, function(response)
-            if response and #response > 0 then
-                for i = 1, #response do
-                    local row = response[i]
-                    local owner = row.owner
-                    local data = json.decode(row.data)
+        local response = MySQL.query.await('SELECT `owner`, `data` FROM `jc_ownedmotels`', {})
+        if response and #response > 0 then
+            for i = 1, #response do
+                local row = response[i]
+                local owner = row.owner
+                local data = json.decode(row.data)
 
-                    if data.motelID == motel then
-                        if owner and owner ~= '' then
-                            MySQL.update.await('UPDATE jc_ownedmotels SET funds = funds + ? WHERE owner = ? AND JSON_EXTRACT(data, "$.motelID") = ?', {
-                                price, owner, motel
-                            })
-                            break
-                        end
+                if data.motelID == motel then
+                    if owner and owner ~= '' then
+                        MySQL.update.await('UPDATE jc_ownedmotels SET funds = funds + ? WHERE owner = ? AND JSON_EXTRACT(data, "$.motelID") = ?', {
+                            price, owner, motel
+                        })
+                        break
                     end
                 end
             end
-        end)
+        end
 
         QBCore.Functions.Notify(src, 'You successfully rented room ' .. room .. '!')
         TriggerClientEvent('jc-motels:client:rentedRoom', -1, motel, uniqueID, citizenid, fullName)
@@ -278,26 +307,47 @@ RegisterNetEvent('jc-motels:server:endRent', function(uniqueID, room)
         uniqueID = uniqueID,
     }
 
-    Player.Functions.RemoveItem(Config.MotelKey, 1, nil, info)
+    local items = Player.PlayerData.items
+    local tableToRemove = nil
+    for k, item in pairs(items) do
+        if item.name == Config.MotelKey then
+            if item.info.uniqueID == uniqueID and item.info.room == room then
+                tableToRemove = k
+                break
+            end
+        end
+    end
+    if tableToRemove then
+        table.remove(items, tableToRemove)
+    end
+
+    if Config.InventorySystem == 'qb' then
+        exports['qb-inventory']:SetInventory(src, items)
+    elseif Config.InventorySystem == 'qs' then
+        exports['qs-inventory']:RemoveItem(src, Config.MotelKey, 1, nil, info)
+    end
     Wait(10)
     for _, v in pairs(Players) do
         local items = v.PlayerData.items
-        local itemToRemove = nil
-        local itemMeta = nil
-        for _, item in pairs(items) do
+        local tableToRemove = nil
+        for k, item in pairs(items) do
             if item.name == Config.MotelKey then
                 if item.info.uniqueID == uniqueID and item.info.room == room then
-                    itemToRemove = item.name
-                    itemMeta = item.info
+                    tableToRemove = k
                     break
                 end
             end
         end
+        if tableToRemove then
+            table.remove(items, tableToRemove)
+        end
+
         if Config.InventorySystem == 'qs' then
-            exports['qs-inventory']:RemoveItem(v.PlayerData.source, itemToRemove, 1, nil, itemMeta)
+            local target = QBCore.Functions.GetPlayer(v.PlayerData.source)
+            exports['qs-inventory']:RemoveItem(target, Config.MotelKey, 1, nil, info)
         elseif Config.InventorySystem == 'qb' then
             local target = QBCore.Functions.GetPlayer(v.PlayerData.source)
-            target.Functions.RemoveItem(itemToRemove, 1, nil, itemMeta)
+            exports['qb-inventory']:SetInventory(target, items)
         end
     end
     Wait(1000)
@@ -317,11 +367,12 @@ RegisterNetEvent('jc-motels:server:endRent', function(uniqueID, room)
     end
 end)
 
-RegisterNetEvent('jc-motels:server:kickoutRenter', function(uniqueID)
-    local deleteQuery = MySQL.query.await('DELETE FROM `jc_motels` WHERE `uniqueid` = ?', {uniqueID})
-    if deleteQuery then
+RegisterNetEvent('jc-motels:server:kickoutRenter', function(motel, renter, room)
+    local src = source
+    local deleteQuery = MySQL.update.await('DELETE FROM `jc_motels` WHERE `motel` = ? AND `renter` = ? AND `room` = ?', {motel, renter, room})
+    if deleteQuery and deleteQuery > 0 then
         QBCore.Functions.Notify(src, 'Successfully kicked renter out!')
-        TriggerClientEvent('jc-motels:client:removeRenter', -1, uniqueID)
+        TriggerClientEvent('jc-motels:client:removeRenter', -1, renter)
     else
         QBCore.Functions.Notify(src, 'Something went wrong!', 'error', 3000)
     end
@@ -331,16 +382,13 @@ RegisterNetEvent('jc-motels:server:changeMotelName', function(motel, newName)
     local src = source
     local Player = QBCore.Functions.GetPlayer(src)
     local citizenid = Player.PlayerData.citizenid
-    print('Line 235')
 
     MySQL.query('SELECT `data` FROM `jc_ownedmotels` WHERE `owner` = ?', {citizenid}, function(response)
         if response and #response > 0 then
             for i = 1, #response do
                 local row = response[i]
                 local data = json.decode(row.data)
-                print('Line 242', data.name)
                 if data.name == motel or data.newName == motel then
-                    print('Line 244')
                     data.newName = newName
                     local updatedData = json.encode(data)
                     if data.name == motel then
@@ -539,11 +587,10 @@ end)
 RegisterNetEvent('motel:server:loseLockpick', function()
     local src = source
     local Player = QBCore.Functions.GetPlayer(src)
-    Player.Functions.RemoveItem(Config.Lockpick, 1)
-    if Config.QBVersion == 'oldqb' then
-        TriggerClientEvent('inventory:client:ItemBox', source, QBCore.Shared.Items[Config.Lockpick], 'remove')
+    if Config.InventorySystem == 'qs' then
+        exports['qs-inventory']:RemoveItem(src, Config.Lockpick, 1)
     else
-        TriggerClientEvent('qb-inventory:client:ItemBox', source, QBCore.Shared.Items[Config.Lockpick], 'remove')
+        exports['qb-inventory']:RemoveItem(src, Config.Lockpick, 1, false, 'qb-inventory:removeLockpick')
     end
 end)
 
@@ -573,11 +620,14 @@ RegisterNetEvent('jc-motels:server:replaceKey', function(room, uniqueID, keyPric
         local items = v.PlayerData.items
         local itemToRemove = nil
         local itemMeta = nil
-        for _, item in pairs(items) do
+        local tableToRemove = nil
+        for k, item in pairs(items) do
             if item.name == Config.MotelKey then
                 if item.info.uniqueID == uniqueID and item.info.room == room then
+                    tableToRemove = k
                     itemToRemove = item.name
                     itemMeta = item.info
+                    item = nil
                     break
                 end
             end
@@ -585,8 +635,11 @@ RegisterNetEvent('jc-motels:server:replaceKey', function(room, uniqueID, keyPric
         if Config.InventorySystem == 'qs' then
             exports['qs-inventory']:RemoveItem(v.PlayerData.source, itemToRemove, 1, nil, itemMeta)
         elseif Config.InventorySystem == 'qb' then
+            if tableToRemove then
+                table.remove(items, tableToRemove)
+            end
             local target = QBCore.Functions.GetPlayer(v.PlayerData.source)
-            target.Functions.RemoveItem(itemToRemove, 1, nil, itemMeta)
+            exports['qb-inventory']:SetInventory(target, items)
         end
     end
     exports['qs-inventory']:AddItem(src, Config.MotelKey, 1, nil, info)
