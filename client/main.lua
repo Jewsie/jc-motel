@@ -2,7 +2,7 @@ local QBCore = exports['qb-core']:GetCoreObject()
 local motels = {}
 local rooms = {}
 
-if Config.PolyZone == 'PolyZone' then
+if Config.PolyZone == 'PolyZone' and not Config.UseTarget then
     RegisterNetEvent('jc-motel:client:AddMotel', function(k, v)
         motels[k]:onPlayerInOut(function(onInsideOut)
             if onInsideOut then

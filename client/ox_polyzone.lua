@@ -3,7 +3,7 @@ local motels = {}
 local rooms = {}
 local zones = {}
 
-if Config.PolyZone == 'ox' then
+if Config.PolyZone == 'ox' and not Config.UseTarget then
     RegisterNetEvent('jc-motel:client:AddMotel', function(k, v)
         zones[k] = lib.zones.box({
             name = k,
