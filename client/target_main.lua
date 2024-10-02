@@ -97,24 +97,48 @@ if Config.TargetScript == 'qb' then
                             local items = PlayerData.items
                             local hasFound = false
             
-                            for _, item in pairs(items) do
-                                if item.name == Config.MotelKey then
-                                    if item.info.uniqueID == keydata.uniqueID then
-                                        RequestAnimDict("anim@heists@keycard@")
-                                        while not HasAnimDictLoaded("anim@heists@keycard@") do
-                                            Wait(0)
-                                        end
-                                        TaskPlayAnim(PlayerPedId(), "anim@heists@keycard@", "exit", 8.0, 1.0, -1, 48, 0, 0, 0, 0)
-                                        Wait(300)
-                                        QBCore.Functions.TriggerCallback('motels:getDoorDate', function(data)
-                                            if data then
-                                                Config.DoorlockAction(keydata.uniqueID, not data.isLocked)
-                                                ClearPedTasks(PlayerPedId())
-                                                TriggerServerEvent('motel:server:setDoorState', keydata.uniqueID)
+                            if Config.Framework == 'qbx' then 
+                                for _, item in pairs(items) do
+                                    if item.name == Config.MotelKey then
+                                        if item.metadata.uniqueID == keydata.uniqueID then
+                                            RequestAnimDict("anim@heists@keycard@")
+                                            while not HasAnimDictLoaded("anim@heists@keycard@") do
+                                                Wait(0)
                                             end
-                                        end, keydata.uniqueID)
-                                        hasFound = true
-                                        break
+                                            TaskPlayAnim(PlayerPedId(), "anim@heists@keycard@", "exit", 8.0, 1.0, -1, 48, 0, 0, 0, 0)
+                                            Wait(300)
+                                            QBCore.Functions.TriggerCallback('motels:getDoorDate', function(data)
+                                                if data then
+                                                    Config.DoorlockAction(keydata.uniqueID, not data.isLocked)
+                                                    ClearPedTasks(PlayerPedId())
+                                                    TriggerServerEvent('motel:server:setDoorState', keydata.uniqueID)
+                                                end
+                                            end, keydata.uniqueID)
+                                            hasFound = true
+                                            break
+                                        end
+                                    end
+                                end
+                            else
+                                for _, item in pairs(items) do
+                                    if item.name == Config.MotelKey then
+                                        if item.info.uniqueID == keydata.uniqueID then
+                                            RequestAnimDict("anim@heists@keycard@")
+                                            while not HasAnimDictLoaded("anim@heists@keycard@") do
+                                                Wait(0)
+                                            end
+                                            TaskPlayAnim(PlayerPedId(), "anim@heists@keycard@", "exit", 8.0, 1.0, -1, 48, 0, 0, 0, 0)
+                                            Wait(300)
+                                            QBCore.Functions.TriggerCallback('motels:getDoorDate', function(data)
+                                                if data then
+                                                    Config.DoorlockAction(keydata.uniqueID, not data.isLocked)
+                                                    ClearPedTasks(PlayerPedId())
+                                                    TriggerServerEvent('motel:server:setDoorState', keydata.uniqueID)
+                                                end
+                                            end, keydata.uniqueID)
+                                            hasFound = true
+                                            break
+                                        end
                                     end
                                 end
                             end

@@ -35,7 +35,7 @@ function WardrobeHandler(wardrobePos)
     lib.hideTextUI()
 end
 
-function StashHandler(stashPos, uniqueID, weight, slots)
+function StashHandler(stashPos, uniqueID, weight, slots, pos)
     local pos = GetEntityCoords(PlayerPedId())
     while #(pos - stashPos) <= 2.0 do
         Wait(0)
@@ -53,6 +53,8 @@ function StashHandler(stashPos, uniqueID, weight, slots)
                     slots = slots,
                 })
                 TriggerEvent('ps-inventory:client:SetCurrentStash', uniqueID)
+            elseif Config.InventorySystem == 'ox' then
+                TriggerServerEvent('jc-motel:server:openInventory', uniqueID, weight, slots, 'ox', pos)
             end
         end
     end
