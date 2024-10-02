@@ -21,7 +21,7 @@ end
 
 function WardrobeHandler(wardrobePos)
     local pos = GetEntityCoords(PlayerPedId())
-    while (#pos - wardrobePos) <= 2.0 do
+    while #(pos - wardrobePos) <= 2.0 do
         Wait(0)
         pos = GetEntityCoords(PlayerPedId())
         lib.showTextUI('[E] To open wardrobe')
