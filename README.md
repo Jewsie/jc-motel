@@ -2,7 +2,7 @@
 JC-Motels is created to make an immersive and beautiful for players who wish to have a motel script on their server! It's feature rich and will only be updated on more and more over time meaning there will be lots of new features, design and what not!
 
 ## Support
-Discord: https://discord.com/invite/CZGDPcdSa7
+Discord: [https://discord.com/invite/CZGDPcdSa7](https://discord.gg/uFVYG6UJaM)
 
 # Features
 - Create a motel anywhere
