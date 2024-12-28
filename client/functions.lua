@@ -26,13 +26,23 @@ function WardrobeHandler(wardrobePos)
         pos = GetEntityCoords(PlayerPedId())
         lib.showTextUI('[E] To open wardrobe')
         
-        if Config.AppearanceScript == 'illenium-appearance' then
-            TriggerEvent('qb-clothing:client:openOutfitMenu')
-        elseif Config.AppearanceScript == 'qb-clothes' then
-            TriggerEvent('qb-clothing:client:openOutfitMenu')
+        if IsControlJustPressed(0, 38) then
+            if Config.AppearanceScript == 'illenium-appearance' then
+                TriggerEvent('qb-clothing:client:openOutfitMenu')
+            elseif Config.AppearanceScript == 'qb-clothes' then
+                TriggerEvent('qb-clothing:client:openOutfitMenu')
+            end
         end
     end
     lib.hideTextUI()
+end
+
+function WardrobeHandlerTarget(wardrobePos)
+    if Config.AppearanceScript == 'illenium-appearance' then
+        TriggerEvent('qb-clothing:client:openOutfitMenu')
+    elseif Config.AppearanceScript == 'qb-clothes' then
+        TriggerEvent('qb-clothing:client:openOutfitMenu')
+    end
 end
 
 function StashHandler(stashPos, uniqueID, weight, slots, pos)
@@ -59,6 +69,22 @@ function StashHandler(stashPos, uniqueID, weight, slots, pos)
         end
     end
     lib.hideTextUI()
+end
+
+function StashHandlerTarget(stashPos, uniqueID, weight, slots, pos)
+    if Config.InventorySystem == 'qs' then
+        TriggerServerEvent('jc-motel:server:openInventory', uniqueID, weight, slots, 'qs')
+    elseif Config.InventorySystem == 'qb' then
+        TriggerServerEvent('jc-motel:server:openInventory', uniqueID, weight, slots, 'qb')
+    elseif Config.InventorySystem == 'ps' then
+        TriggerServerEvent('ps-inventory:server:OpenInventory', 'stash', uniqueID, {
+            maxweight = weight,
+            slots = slots,
+        })
+        TriggerEvent('ps-inventory:client:SetCurrentStash', uniqueID)
+    elseif Config.InventorySystem == 'ox' then
+        TriggerServerEvent('jc-motel:server:openInventory', uniqueID, weight, slots, 'ox', pos)
+    end
 end
 
 function ManageMotelHandler(k, v)

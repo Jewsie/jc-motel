@@ -261,7 +261,7 @@ RegisterNetEvent('jc-motels:server:rentRoom', function(motel, room, uniqueID, pr
             local QBX = exports['qbx_core']:GetPlayer(src)
             QBX.Functions.AddItem(Config.MotelKey, 1, false, info)
         else
-            exports['qb-inventory']:AddItem(src, Config.MotelKey, 1, false, info, 'qb-inventory:addKey')
+            exports['qb-inventory']:AddItem(src, Config.MotelKey, 1, false, info)
         end
 
         if Config.QBVersion == 'oldqb' then
@@ -613,7 +613,7 @@ RegisterNetEvent('motel:server:loseLockpick', function()
         local target = exports['qbx_core']:GetPlayer(src)
         target.Functions.RemoveItem(Config.Lockpick, 1)
     else
-        exports['qb-inventory']:RemoveItem(src, Config.Lockpick, 1, false, 'qb-inventory:removeLockpick')
+        exports['qb-inventory']:RemoveItem(src, Config.Lockpick, 1)
     end
 end)
 

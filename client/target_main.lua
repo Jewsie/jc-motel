@@ -236,7 +236,7 @@ if Config.TargetScript == 'qb' then
                                 label = 'Open Stash',
                                 icon = 'fas fa-chest',
                                 action = function()
-                                    StashHandler(keydata.stashPos, keydata.uniqueID, keydata.stashData['weight'], keydata.stashData['slots'])
+                                    StashHandlerTarget(keydata.stashPos, keydata.uniqueID, keydata.stashData['weight'], keydata.stashData['slots'])
                                 end
                             }
                         },
@@ -253,7 +253,7 @@ if Config.TargetScript == 'qb' then
                                 label = 'Open Wardrobe',
                                 icon = 'fas fa-wardrobe',
                                 action = function()
-                                    WardrobeHandler(keydata.wardrobePos)
+                                    WardrobeHandlerTarget(keydata.wardrobePos)
                                 end
                             }
                         },

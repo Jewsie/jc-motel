@@ -234,7 +234,7 @@ if Config.TargetScript == 'ox' then
                                 label = 'Open Stash',
                                 icon = 'fas fa-chest',
                                 onSelect = function()
-                                    StashHandler(keydata.stashPos, keydata.uniqueID, keydata.stashData['weight'], keydata.stashData['slots'], keydata.stashPos)
+                                    StashHandlerTarget(keydata.stashPos, keydata.uniqueID, keydata.stashData['weight'], keydata.stashData['slots'], keydata.stashPos)
                                 end
                             }
                         },
@@ -251,7 +251,7 @@ if Config.TargetScript == 'ox' then
                                 label = 'Open Wardrobe',
                                 icon = 'fas fa-wardrobe',
                                 onSelect = function()
-                                    WardrobeHandler(keydata.wardrobePos)
+                                    WardrobeHandlerTarget(keydata.wardrobePos)
                                 end
                             }
                         },

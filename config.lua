@@ -2,7 +2,7 @@ Config = Config or {}
 
 Config.Framework = 'qbx' -- qbcore or qbx
 Config.Debug = true -- For developers and troubleshooting issues
-Config.UseTarget = true -- Whether to use QB or OX Target or not
+Config.UseTarget = false -- Whether to use QB or OX Target or not
 Config.EnableRobbery = true -- Make it possible to break into motel rooms!
 Config.RestrictRooms = false -- If set to true, people can only rent 1 room at a time!
 Config.RestrictMotels = true -- If set to true, people cna only buy 1 motel at a time!
@@ -15,10 +15,10 @@ Config.LockpickLoseChance = 0 -- How high chance to lose lockpick when breaking 
 Config.SuccessAlarmChance = 75 -- How high a chance police alert will be reported if lockpicking a motel room is succeesfull.
 Config.AppearanceScript = 'qb-clothes' -- qb-clothes or illenium-appearance
 Config.PoliceAlert = 'qbdefault' -- The current modules are; 'qbdefault', 'ps-dispatch'
-Config.DoorlockSystem = 'ox' -- Current options are; 'qb', 'ox'
-Config.InventorySystem = 'ox' -- qb, qs, ox or ps
-Config.TargetScript = 'ox' -- What targetting script you're currently using! 'qb', 'ox'
-Config.PolyZone = 'ox' -- What polyzone script system to use 'PolyZone' or 'ox' Only if Config.UseTarget is set to false
+Config.DoorlockSystem = 'qb' -- Current options are; 'qb', 'ox'
+Config.InventorySystem = 'qb' -- qb, qs, ox or ps
+Config.TargetScript = 'qb' -- What targetting script you're currently using! 'qb', 'ox'
+Config.PolyZone = 'PolyZone' -- What polyzone script system to use 'PolyZone' or 'ox' Only if Config.UseTarget is set to false
 
 Config.Motels = {
     ['bayviewlodge'] = { -- The unique id of the motel!
@@ -52,7 +52,7 @@ Config.Rooms = {
             uniqueID = 1, -- Has to match the name of the DoorID in qb-doorlock or ox doorid Config!
             doorPos = vector3(-710.1, 5768.33, 17.83), -- The location where the door is!
             stashPos = vector3(-716.68, 5772.8, 17.65), -- The location of the stash for the player!
-            wardrobePos = vector3(-711.36, 5780.36, 17.44), -- The location of the wardrobe!
+            wardrobePos = vector3(-716.17, 5771.16, 17.59), -- The location of the wardrobe!
             doorLocked = true, -- Whether the door starts locked or not, need to be set the same as in the qb-doorlock Config file!
             stashData = {
                 weight = 100000, -- The amount of weight 100000 = 100 KG
