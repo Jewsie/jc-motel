@@ -1,7 +1,7 @@
 Config = Config or {}
 
 Config.Framework = 'qbx' -- qbcore or qbx
-Config.Debug = true -- For developers and troubleshooting issues
+Config.Debug = false -- For developers and troubleshooting issues
 Config.UseTarget = false -- Whether to use QB or OX Target or not
 Config.EnableRobbery = true -- Make it possible to break into motel rooms!
 Config.RestrictRooms = false -- If set to true, people can only rent 1 room at a time!

@@ -13,7 +13,7 @@ if Config.PolyZone == 'ox' and not Config.UseTarget then
             onEnter = function()
                 AtMotelHandler(k, v)
             end,
-            debug = false,
+            debug = Config.Debug,
         })
     end)
 
@@ -71,7 +71,7 @@ if Config.PolyZone == 'ox' and not Config.UseTarget then
                         onEnter = function()
                             RoomHandler(k, keydata.doorPos, tableData)
                         end,
-                        debug = false,
+                        debug = Config.Debug,
                     })
                     lib.zones.box({
                         name = k .. '_stash',
@@ -81,7 +81,7 @@ if Config.PolyZone == 'ox' and not Config.UseTarget then
                         onEnter = function()
                             StashHandler(keydata.stashPos, keydata.uniqueID, keydata.stashData['weight'], keydata.stashData['slots'])
                         end,
-                        debug = false,
+                        debug = Config.Debug,
                     })
                     lib.zones.box({
                         name = k .. '_wardrobe',
@@ -91,7 +91,7 @@ if Config.PolyZone == 'ox' and not Config.UseTarget then
                         onEnter = function()
                             WardrobeHandler(keydata.wardrobePos)
                         end,
-                        debug = false,
+                        debug = Config.Debug,
                     })
                 end
             end

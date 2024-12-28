@@ -42,7 +42,7 @@ if Config.TargetScript == 'ox' then
             coords = v.coords,
             name = 'motel_' .. k,
             radius = 1.5,
-            debug = false,
+            debug = Config.Debug,
             options = {
                 {
                     label = 'Open Reception',
@@ -220,14 +220,14 @@ if Config.TargetScript == 'ox' then
                         coords = keydata.doorPos,
                         radius = 1.5,
                         name = 'room_' .. keydata.uniqueID,
-                        debug = false,
+                        debug = Config.Debug,
                         options = tableData,
                     })
 
                     exports['ox_target']:addSphereZone({
                         name = 'storage_' .. keydata.uniqueID,
                         coords = keydata.stashPos,
-                        debug = false,
+                        debug = Config.Debug,
                         radius = 1.5,
                         options = {
                             {
@@ -245,7 +245,7 @@ if Config.TargetScript == 'ox' then
                         coords = keydata.wardrobePos,
                         name = 'wardrobe_' .. keydata.uniqueID,
                         radius = 1.5,
-                        debug = false,
+                        debug = Config.Debug,
                         options = {
                             {
                                 label = 'Open Wardrobe',

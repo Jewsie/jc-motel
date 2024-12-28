@@ -60,15 +60,15 @@ if Config.PolyZone == 'PolyZone' and not Config.UseTarget then
 
                     rooms[k] = BoxZone:Create(keydata.doorPos, 1.0, 1.0, {
                         name = k,
-                        debugPoly = true
+                        debugPoly = Config.Debug
                     })
                     rooms[k .. '_stash'] = BoxZone:Create(keydata.stashPos, 1.0, 1.0, {
                         name = k,
-                        debugPoly = true
+                        debugPoly = Config.Debug
                     })
                     rooms[k .. '_wardrobe'] = BoxZone:Create(keydata.wardrobePos, 1.0, 1.0, {
                         name = k,
-                        debugPoly = true
+                        debugPoly = Config.Debug
                     })
 
                     rooms[k]:onPlayerInOut(function(onInsideOut)

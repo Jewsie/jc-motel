@@ -41,7 +41,7 @@ if Config.TargetScript == 'qb' then
         exports['qb-target']:AddCircleZone('motel_' .. k, v.coords, 1.5, {
             name = 'motel_' .. k,
             useZ = true,
-            debugPoly = false,
+            debugPoly = Config.Debug,
         }, {
             options = {
                 {
@@ -220,7 +220,7 @@ if Config.TargetScript == 'qb' then
                     exports['qb-target']:AddCircleZone('room_' .. keydata.uniqueID, keydata.doorPos, 1.5, {
                         name = 'room_' .. keydata.uniqueID,
                         useZ = true,
-                        debugPoly = false,
+                        debugPoly = Config.Debug,
                     }, {
                         options = tableData,
                         distance = 1.5,
@@ -229,7 +229,7 @@ if Config.TargetScript == 'qb' then
                     exports['qb-target']:AddCircleZone('storage_' .. keydata.uniqueID, keydata.stashPos, 0.5, {
                         name = 'storage_' .. keydata.uniqueID,
                         useZ = true,
-                        debugPoly = false,
+                        debugPoly = Config.Debug,
                     }, {
                         options = {
                             {
@@ -246,7 +246,7 @@ if Config.TargetScript == 'qb' then
                     exports['qb-target']:AddCircleZone('wardrobe_' .. keydata.uniqueID, keydata.wardrobePos, 1.5, {
                         name = 'wardrobe_' .. keydata.uniqueID,
                         useZ = true,
-                        debugPoly = false,
+                        debugPoly = Config.Debug,
                     }, {
                         options = {
                             {
