@@ -12,10 +12,14 @@ if Config.PolyZone == 'PolyZone' and not Config.UseTarget then
     end)
 
     RegisterNetEvent('jc-motel:client:removezones', function(k, v)
-        zones[k]:remove()
-        zones[k]:destroy()
+        motels[k]:remove()
+        motels[k]:destroy()
         for key, v in pairs(Config.Motels) do
             if key == k then
+                motels[key] = BoxZone:Create(v.coords, 1.0, 1.0, {
+                    name = key,
+                    debugPoly = Config.Debug
+                })
                 TriggerEvent('jc-motel:client:AddMotel', key, v)
             end
         end
@@ -33,6 +37,10 @@ if Config.PolyZone == 'PolyZone' and not Config.UseTarget then
             Wait(500)
 
             for k, v in pairs(Config.Motels) do
+                motels[k] = BoxZone:Create(v.coords, 1.0, 1.0, {
+                    name = k,
+                    debugPoly = Config.Debug
+                })
                 TriggerEvent('jc-motel:client:AddMotel', k, v)
             end
 
