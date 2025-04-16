@@ -255,13 +255,13 @@ RegisterNetEvent('jc-motels:server:rentRoom', function(motel, room, uniqueID, pr
         }
         Player.Functions.RemoveMoney(payMethode, price)
         if Config.InventorySystem == 'qs' then
-            exports['qs-inventory']:AddItem(src, Config.MotelKey, 1, nil, info)
+            exports['qs-inventory']:AddItem(src, Config.MotelKey, 1, info, info)
             TriggerClientEvent('qs-inventory:client:ItemBox', src, QBCore.Shared.Items[Config.MotelKey], 'add')
         elseif Config.InventorySystem == 'ox' then
             local QBX = exports['qbx_core']:GetPlayer(src)
             QBX.Functions.AddItem(Config.MotelKey, 1, false, info)
         else
-            exports['qb-inventory']:AddItem(src, Config.MotelKey, 1, false, info)
+            exports['qb-inventory']:AddItem(src, Config.MotelKey, 1, info, info)
         end
 
         if Config.QBVersion == 'oldqb' then
@@ -338,10 +338,10 @@ RegisterNetEvent('jc-motels:server:endRent', function(uniqueID, room)
     if Config.InventorySystem == 'qb' then
         exports['qb-inventory']:SetInventory(src, items)
     elseif Config.InventorySystem == 'qs' then
-        exports['qs-inventory']:RemoveItem(src, Config.MotelKey, 1, nil, info)
+        exports['qs-inventory']:RemoveItem(src, Config.MotelKey, 1, info, info)
     elseif Config.InventorySystem == 'ox' then
         QBX = exports['qbx_core']:GetPlayer(src)
-        QBX.Functions.RemoveItem(Config.Motelkey, 1, false, info)
+        QBX.Functions.RemoveItem(Config.Motelkey, 1, info, info)
     end
     Wait(10)
     for _, v in pairs(Players) do
@@ -361,13 +361,13 @@ RegisterNetEvent('jc-motels:server:endRent', function(uniqueID, room)
 
         if Config.InventorySystem == 'qs' then
             local target = QBCore.Functions.GetPlayer(v.PlayerData.source)
-            exports['qs-inventory']:RemoveItem(target, Config.MotelKey, 1, nil, info)
+            exports['qs-inventory']:RemoveItem(target, Config.MotelKey, 1, info, info)
         elseif Config.InventorySystem == 'qb' then
             local target = QBCore.Functions.GetPlayer(v.PlayerData.source)
             exports['qb-inventory']:SetInventory(target, items)
         elseif Config.InventorySystem == 'ox' then
             local target = exports['qbx_core']:GetPlayer(src)
-            target.Functions.RemoveItem(Config.MotelKey, 1, false, info)
+            target.Functions.RemoveItem(Config.MotelKey, 1, info, info)
         end
     end
     Wait(1000)
@@ -673,10 +673,10 @@ RegisterNetEvent('jc-motels:server:replaceKey', function(room, uniqueID, keyPric
             end
         end
         if Config.InventorySystem == 'qs' then
-            exports['qs-inventory']:RemoveItem(v.PlayerData.source, itemToRemove, 1, nil, itemMeta)
+            exports['qs-inventory']:RemoveItem(v.PlayerData.source, itemToRemove, 1, itemMeta, itemMeta)
         elseif Config.InventorySystem == 'ox' then
             local target = exports['qbx_core']:GetPlayer(v.PlayerData.source)
-            target.Functions.RemoveItem(Config.MotelKey, 1, false, itemMeta)
+            target.Functions.RemoveItem(Config.MotelKey, 1, itemMeta, itemMeta)
         elseif Config.InventorySystem == 'qb' then
             if tableToRemove then
                 table.remove(items, tableToRemove)
@@ -685,7 +685,7 @@ RegisterNetEvent('jc-motels:server:replaceKey', function(room, uniqueID, keyPric
             exports['qb-inventory']:SetInventory(target, items)
         end
     end
-    exports['qs-inventory']:AddItem(src, Config.MotelKey, 1, nil, info)
+    exports['qs-inventory']:AddItem(src, Config.MotelKey, 1, info, info)
     TriggerClientEvent('qs-inventory:client:ItemBox', src, QBCore.Shared.Items[Config.MotelKey], 'add')
 end)
 
