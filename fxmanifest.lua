@@ -8,12 +8,18 @@ version '1.0.0'
 shared_scripts {
     '@ox_lib/init.lua',
     'config.lua',
+    'locale/en.lua',
+    'locale/*.lua',
+    'locale/locales.lua',
 }
 
 server_scripts {
     '@oxmysql/lib/MySQL.lua',
-    'server/target_main.lua',
+    'server/global_variables.lua',
     'server/functions.lua',
+    'server/callbacks.lua',
+    'server/events.lua',
+    'server/main.lua',
 }
 
 client_scripts {
@@ -22,11 +28,12 @@ client_scripts {
 	'@PolyZone/EntityZone.lua',
 	'@PolyZone/CircleZone.lua',
 	'@PolyZone/ComboZone.lua',
-    'client/functions.lua',
-    'client/target_main.lua',
-    'client/target_ox.lua',
     'client/main.lua',
-    'client/ox_polyzone.lua',
+    'client/functions.lua',
+    'client/events.lua',
+    'client/compat/qb/target.lua',
+    'client/compat/qbx/target.lua',
+    'client/compat/polyzone.lua',
 }
 
 lua54 'yes'

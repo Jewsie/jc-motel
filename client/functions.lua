@@ -1,763 +1,635 @@
+if GetResourceState('qb-core') ~= 'started' and GetResourceState('qbx_core') ~= 'started' then return end
 local QBCore = exports['qb-core']:GetCoreObject()
 
-function RoomHandler(k, doorPos, tableData)
-    local pos = GetEntityCoords(PlayerPedId())
-    while #(pos - doorPos) <= 2.0 do
+function LoadAnim(dict)
+    RequestAnimDict(dict)
+    while not HasAnimDictLoaded(dict) do
         Wait(0)
-        pos = GetEntityCoords(PlayerPedId())
-        lib.showTextUI('[E] To Interact')
-
-        if IsControlJustPressed(0, 38) then
-            lib.registerContext({
-                id = k .. '_door',
-                title = 'Motel Room',
-                options = tableData
-            })
-            lib.showContext(k .. '_door')
-        end
-    end
-    lib.hideTextUI()
-end
-
-function WardrobeHandler(wardrobePos)
-    local pos = GetEntityCoords(PlayerPedId())
-    while #(pos - wardrobePos) <= 2.0 do
-        Wait(0)
-        pos = GetEntityCoords(PlayerPedId())
-        lib.showTextUI('[E] To open wardrobe')
-        
-        if IsControlJustPressed(0, 38) then
-            if Config.AppearanceScript == 'illenium-appearance' then
-                TriggerEvent('qb-clothing:client:openOutfitMenu')
-            elseif Config.AppearanceScript == 'qb-clothes' then
-                TriggerEvent('qb-clothing:client:openOutfitMenu')
-            end
-        end
-    end
-    lib.hideTextUI()
-end
-
-function WardrobeHandlerTarget(wardrobePos)
-    if Config.AppearanceScript == 'illenium-appearance' then
-        TriggerEvent('qb-clothing:client:openOutfitMenu')
-    elseif Config.AppearanceScript == 'qb-clothes' then
-        TriggerEvent('qb-clothing:client:openOutfitMenu')
     end
 end
 
-function StashHandler(stashPos, uniqueID, weight, slots, pos)
-    local pos = GetEntityCoords(PlayerPedId())
-    while #(pos - stashPos) <= 2.0 do
-        Wait(0)
-        pos = GetEntityCoords(PlayerPedId())
-        lib.showTextUI('[E] To open stash')
-
-        if IsControlJustPressed(0, 38) then
-            if Config.InventorySystem == 'qs' then
-                TriggerServerEvent('jc-motel:server:openInventory', uniqueID, weight, slots, 'qs')
-            elseif Config.InventorySystem == 'qb' then
-                TriggerServerEvent('jc-motel:server:openInventory', uniqueID, weight, slots, 'qb')
-            elseif Config.InventorySystem == 'ps' then
-                TriggerServerEvent('ps-inventory:server:OpenInventory', 'stash', uniqueID, {
-                    maxweight = weight,
-                    slots = slots,
-                })
-                TriggerEvent('ps-inventory:client:SetCurrentStash', uniqueID)
-            elseif Config.InventorySystem == 'ox' then
-                TriggerServerEvent('jc-motel:server:openInventory', uniqueID, weight, slots, 'ox', pos)
-            end
-        end
-    end
-    lib.hideTextUI()
-end
-
-function StashHandlerTarget(stashPos, uniqueID, weight, slots, pos)
-    if Config.InventorySystem == 'qs' then
-        TriggerServerEvent('jc-motel:server:openInventory', uniqueID, weight, slots, 'qs')
-    elseif Config.InventorySystem == 'qb' then
-        TriggerServerEvent('jc-motel:server:openInventory', uniqueID, weight, slots, 'qb')
-    elseif Config.InventorySystem == 'ps' then
-        TriggerServerEvent('ps-inventory:server:OpenInventory', 'stash', uniqueID, {
-            maxweight = weight,
-            slots = slots,
-        })
-        TriggerEvent('ps-inventory:client:SetCurrentStash', uniqueID)
-    elseif Config.InventorySystem == 'ox' then
-        TriggerServerEvent('jc-motel:server:openInventory', uniqueID, weight, slots, 'ox', pos)
-    end
-end
-
-function ManageMotelHandler(k, v)
+function OpenReception(name, motelData)
     local PlayerData = QBCore.Functions.GetPlayerData()
-    if PlayerData.citizenid == v.owner then
-        lib.registerContext({
-            id = 'manage_motel',
-            title = v.label,
-            options = {
-                {
-                    title = 'Manage Rooms',
-                    description = 'Manage your rented rooms!',
-                    onSelect = function()
-                        local roomData = {}
-                        QBCore.Functions.TriggerCallback('motels:rentedRooms', function(data)
-                            if data then
-                                for _, r in pairs(data) do
-                                    roomData[#roomData + 1] = {
-                                        title = r.room,
-                                        description = 'Click to kick out renter!\n Renter: ' .. r.renterName,
-                                        onSelect = function()
-                                            TriggerServerEvent('jc-motels:server:kickoutRenter', k, r.renter, r.room)
-                                        end
-                                    }
-                                end
+    local citizenid = PlayerData.citizenid
+    local lang = Config.Locale
+    local tableData = {}
 
-                                lib.registerContext({
-                                    id = 'manage_renters',
-                                    title = 'Manage Renters',
-                                    options = roomData
-                                })
-                                lib.showContext('manage_renters')
-                            else
-                                QBCore.Functions.Notify('No rooms rented!', 'error', 3000)
-                                return
-                            end
-                        end, k)
-                    end
-                },
-                {
-                    title = 'Funds $' .. v.funds,
-                    description = 'Deposit or withdraw funds!',
+    QBCore.Functions.TriggerCallback('motel:getMotelData', function(data)
+        if data then
+            tableData[#tableData + 1] = {
+                title = _L('rentroom'),
+                description = _L('rentroomdesc'),
+                onSelect = function()
+                    RentRoomsHandler(name, motelData)
+                end
+            }
+            tableData[#tableData + 1] = {
+                title = _L('rentedrooms'),
+                description = _L('rentedroomsdesc'),
+                onSelect = function()
+                    RentedRoomsHandler(name, motelData)
+                end
+            }
+            
+            if not data.owner or data.owner == '' then
+                tableData[#tableData + 1] = {
+                    title = _L('buymotel'),
+                    description = _L('buymoteldesc') .. motelData.price,
                     onSelect = function()
-                        local PlayerData = QBCore.Functions.GetPlayerData()
-                        local money = PlayerData.money['cash']
-                        local info = lib.inputDialog('Manage Funds', {
-                            {
-                                type = 'number',
-                                label = 'Amount',
-                                description = 'The amount to deposit or withdraw!',
-                                required = true,
-                                min = 0,
-                                default = 0,
-                            },
-                            {
-                                type = 'select',
-                                label = 'Option',
-                                description = 'Select to deposit or withdraw!',
-                                options = {
-                                    {value = 'deposit', label = 'Deposit'},
-                                    {value = 'withdraw', label = 'Withdraw'},
-                                }
-                            }
-                        })
-                        if info[2] == 'deposit' and money <= tonumber(info[1]) then
-                            QBCore.Functions.Notify('You don\'t have this much money to deposit!', 'error', 3000)
-                            return
-                        end
-                        if info[2] == 'withdraw' and v.funds < tonumber(info[1]) then
-                            QBCore.Functions.Notify('The motel does not have this amount of money in funds!', 'error', 3000)
-                            return
-                        end
-                        if tonumber(info[1]) <= 0 then
-                            QBCore.Functions.Notify('Can\'t deposit or withdraw a zero or minus value!', 'error', 3000)
-                            return
-                        end 
-                        TriggerServerEvent('jc-motels:server:changeFunds', v.label, info[1], info[2])
-                    end
-                },
-                {
-                    title = 'Change name',
-                    description = 'Change the name of your motel!\n Current name: ' .. v.label,
-                    onSelect = function()
-                        local info = lib.inputDialog('Motel name change', {
-                            {
-                                type = 'input',
-                                label = 'Name',
-                                description = 'Change the name of your motel',
-                                placeholder = v.label,
-                                required = true,
-                            }
-                        })
-                        TriggerServerEvent('jc-motels:server:changeMotelName', v.label, info[1])
-                    end
-                },
-                {
-                    title = 'Change Prices',
-                    description = 'Change room prices!',
-                    onSelect = function()
-                        local info = lib.inputDialog('Motel name change', {
-                            {
-                                type = 'number',
-                                label = 'New Price',
-                                description = 'Change the price of your motel rooms!',
-                                default = v.roomprices,
-                                min = 0,
-                                required = true,
-                            }
-                        })
-                        TriggerServerEvent('jc-motels:server:changePrices', v.label, info[1])
-                    end
-                },
-                {
-                    title = 'Automatic Payment',
-                    description = 'Enable or disable automatic payment for your\n Autopay: ' .. tostring(v.autoPayment),
-                    onSelect = function()
-                        if Config.AllowAutoPay then
-                            local info = lib.inputDialog('Toggle Autopay', {
-                                {
-                                    type = 'select',
-                                    label = 'Toggle Autopay',
-                                    options = {
-                                        {value = 'true', label = 'Allow'},
-                                        {value = 'false', label = 'Disallow'},
-                                    },
-                                    required = true,
-                                }
-                            })
-                            TriggerServerEvent('jc-motels:server:changeAutopay', v.label, info[1])
-                        else
-                            QBCore.Functions.Notify('This function is not allowed!', 'error', 3000)
-                        end
-                    end
-                },
-                {
-                    title = 'Sell Motel',
-                    description = 'Sell the motel again for $' .. v.price * 0.85,
-                    onSelect = function()
-                        local input = lib.inputDialog('Transfer Account', {
-                            {
-                                type = 'select',
-                                label = 'Account',
-                                description = 'Account to transfer the money to',
-                                options = {
-                                    {value = 'bank', label = 'Bank'},
-                                    {value = 'cash', label = 'Cash'},
-                                },
-                                required = true,
-                            }
-                        })
-                        TriggerServerEvent('jc-motels:server:sellMotel', k, input[1], v.price * 0.85)
+                        BuyMotelHandler(name, motelData)
                     end
                 }
-            }
-        })
-        lib.showContext('manage_motel')
-    end
-end
-
-function RentMotelHandler(k, v)
-    local tableData = {}
-    for key, h in pairs(Config.Rooms[k]) do
-        if not h.renter then
-            tableData[#tableData + 1] = {
-                title = h.room,
-                description = 'Rent room for $' .. v.roomprices,
-                onSelect = function()
-                    local PlayerData = QBCore.Functions.GetPlayerData()
-                    local money = PlayerData.money['cash']
-                    local bank = PlayerData.money['bank']
-
-                    local input = lib.inputDialog('Replace Key', {
-                        {
-                            type = 'select',
-                            label = 'Payment Methode',
-                            description = 'Pay through bank or card',
-                            options = {
-                                {value = 'bank', label = 'Bank'},
-                                {value = 'cash', label = 'Cash'}
-                            },
-                            required = true
-                        }
-                    })
-
-                    if money >= v.roomprices and input[1] == 'cash' then
-                        TriggerServerEvent('jc-motels:server:rentRoom', k, h.room, h.uniqueID, v.roomprices, v.payInterval, input[1])
-                    elseif bank >= v.roomprices and input[1] == 'bank' then
-                        TriggerServerEvent('jc-motels:server:rentRoom', k, h.room, h.uniqueID, v.roomprices, v.payInterval, input[1])
-                    else
-                        QBCore.Functions.Notify('You can\'t afford this room!', 'error', 3000)
+            elseif data.owner and data.owner == citizenid then
+                tableData[#tableData + 1] = {
+                    title = _L('managemotel'),
+                    description = _L('managemoteldesc'),
+                    onSelect = function()
+                        ManageMotelHandler(name, motelData)
                     end
+                }
+            end
+        else
+            tableData[#tableData + 1] = {
+                title = _L('rentroom'),
+                description = _L('rentroomdesc'),
+                onSelect = function()
+                    RentRoomsHandler(name, motelData)
+                end
+            }
+            tableData[#tableData + 1] = {
+                title = _L('rentedrooms'),
+                description = _L('rentedroomsdesc'),
+                onSelect = function()
+                    RentedRoomsHandler(name, motelData)
+                end
+            }
+            tableData[#tableData + 1] = {
+                title = _L('buymotel'),
+                description = _L('buymoteldesc') .. motelData.price,
+                onSelect = function()
+                    BuyMotelHandler(name, motelData)
                 end
             }
         end
-    end
 
-    lib.registerContext({
-        id = 'rent_room',
-        title = 'Rent Motel Room',
-        options = tableData
-    })
-    lib.showContext('rent_room')
+        lib.registerContext({
+            id = 'open_motel',
+            title = data.label or motelData.label,
+            options = tableData
+        })
+        lib.showContext('open_motel')
+    end, name)
 end
 
-function RentedRoomsHandler(k, v)
-    local tableData = {}
-    local PlayerData = QBCore.Functions.GetPlayerData()
-    QBCore.Functions.TriggerCallback('rentedRooms', function(data)
+function ManageMotelHandler(name, motelData)
+    QBCore.Functions.TriggerCallback('motel:motelData', function(data)
         if data then
-            if Config.RestrictRooms then
-                lib.registerContext({
-                    id = 'rented_rooms',
-                    title = 'Manage your rented Room(s)',
-                    options = {
-                        {
-                            title = data.room,
-                            description = 'Manage your motel room!\n Payment due ' .. string.format("%d days", math.floor(data.duration / 24)),
-                            onSelect = function()
-                                lib.registerContext({
-                                    id = data.uniqueid,
-                                    title = data.room,
-                                    options = {
-                                        {
-                                            title = 'Extend Renting Periode',
-                                            description = 'Pay $' .. v.roomprices,
-                                            onSelect = function()
-                                                if data.duration <= 24 then
+            lib.registerContext({
+                id = 'manage_motel',
+                title = _L('managemotel'),
+                options = {
+                    {
+                        title = _L('managerooms'),
+                        description = _L('manageroomsdesc'),
+                        onSelect = function()
+                            QBCore.Functions.TriggerCallback('motel:getRooms', function(roomData)
+                                if roomData then
+                                    local tableData = {}
+                                    local hasFound = false
+
+                                    for motelName, room in pairs(roomData) do
+                                        if room.renter and room.renter ~= '' then
+                                            if not hasFound then hasFound = true end
+                                            tableData[#tableData + 1] = {
+                                                title = room.room,
+                                                description = 'Manage ' .. room.room,
+                                                onSelect = function()
                                                     lib.registerContext({
-                                                        id = 'pay_rent',
-                                                        title = 'Pay Rent for ' .. data.room,
+                                                        id = 'manage_motel_rooms',
+                                                        title = _L('managerooms'),
                                                         options = {
                                                             {
-                                                                title = 'Confirm',
-                                                                description = 'Confirm payment on room',
-                                                                onSelect = function()
-                                                                    local PlayerData = QBCore.Functions.GetPlayerData()
-                                                                    local money = PlayerData.money['cash']
-
-                                                                    if money >= v.roomprices then
-                                                                        TriggerServerEvent('jc-motels:server:payRent', data.uniqueid, v.roomprices, v.payInterval)
-                                                                    else
-                                                                        QBCore.Functions.Notify('You can\'t afford to extend your rent!', 'error', 3000)
-                                                                    end
-                                                                end
+                                                                title = _L('renter') .. room.renterName,
+                                                                readOnly = true,
                                                             },
                                                             {
-                                                                title = 'Cancel',
-                                                                description = 'Cancel payment of motel room',
-                                                                onSelect = function() end
+                                                                title = _L('endrent'),
+                                                                description = _L('endrentdesc2'),
+                                                                onSelect = function()
+                                                                    TriggerServerEvent('motel:server:endRent', name, room.uniqueID)
+                                                                end
                                                             }
                                                         }
                                                     })
-                                                    lib.showContext('pay_rent')
-                                                else
-                                                    QBCore.Functions.Notify('You can only pay when there\'s is 1 day or less left!', 'error', 3000)
+                                                    lib.showContext('manage_motel_rooms')
                                                 end
-                                            end
-                                        },
-                                        {
-                                            title = 'End Rent',
-                                            description = 'End your renting periode with the motel immediately!',
-                                            onSelect = function()
-                                                TriggerServerEvent('jc-motels:server:endRent', data.uniqueid, data.room)
-                                            end
-                                        },
-                                        {
-                                            title = 'Lost Key',
-                                            description = 'If you have lost a key, you can get a new!',
-                                            onSelect = function()
-                                                local PlayerData = QBCore.Functions.GetPlayerData()
-                                                local money = PlayerData.money['cash']
-                                                local bank = PlayerData.money['bank']
+                                            }
+                                        end
+                                    end
+                                    Wait(100)
 
-                                                local input = lib.inputDialog('Replace Key', {
-                                                    {
-                                                        type = 'select',
-                                                        label = 'Payment Methode',
-                                                        description = 'Pay through bank or card',
-                                                        options = {
-                                                            {value = 'bank', label = 'Bank'},
-                                                            {value = 'cash', label = 'Cash'}
-                                                        },
-                                                        required = true
-                                                    }
-                                                })
-
-                                                if money >= v.keyPrice and input[1] == 'cash' then
-                                                    TriggerServerEvent('jc-motels:server:replaceKey', data.room, data.uniqueid, v.keyPrice, input[1])
-                                                elseif bank >= v.keyPrice and input[1] == 'bank' then
-                                                    TriggerServerEvent('jc-motels:server:replaceKey', data.room, data.uniqueid, v.keyPrice, input[1])
-                                                else
-                                                    QBCore.Functions.Notify('You can\'t afford to replace your key!', 'error', 3000)
-                                                end
-                                            end
-                                        }
-                                    }
-                                })
-                                lib.showContext(data.uniqueid)
-                            end
-                        }
-                    }
-                })
-                lib.showContext('rented_rooms')
-            else
-                local roomData = {}
-                for _, val in pairs(data) do
-                    roomData[#roomData + 1] = {
-                        title = val.room,
-                        description = 'Manage your motel room!\n Payment due ' .. string.format("%d days", math.floor(val.duration / 24)),
+                                    if not hasFound then
+                                        return QBCore.Functions.Notify(_L('noroomsrented'), 'error', 3000)
+                                    else
+                                        lib.registerContext({
+                                            id = 'manage_rooms',
+                                            title = _L('managerooms'),
+                                            options = tableData
+                                        })
+                                        lib.showContext('manage_rooms')
+                                    end
+                                else
+                                    QBCore.Functions.Notify(_L('noroomsrented'), 'error', 3000)
+                                    return
+                                end
+                            end, name)
+                        end
+                    },
+                    {
+                        title = _L('funds') .. data.funds,
+                        description = _L('fundsdesc'),
                         onSelect = function()
-                            lib.registerContext({
-                                id = val.uniqueid,
-                                title = val.room,
-                                options = {
-                                    {
-                                        title = 'Extend Renting Periode',
-                                        description = 'Pay $' .. v.roomprices,
-                                        onSelect = function()
-                                            if val.duration <= 24 then
-                                                lib.registerContext({
-                                                    id = 'pay_rent',
-                                                    title = 'Pay Rent for ' .. val.room,
-                                                    options = {
-                                                        {
-                                                            title = 'Confirm',
-                                                            description = 'Confirm payment on room',
-                                                            onSelect = function()
-                                                                local PlayerData = QBCore.Functions.GetPlayerData()
-                                                                local money = PlayerData.money['cash']
-
-                                                                if money >= v.roomprices then
-                                                                    TriggerServerEvent('jc-motels:server:payRent', val.uniqueid, v.roomprices, v.payInterval)
-                                                                else
-                                                                    QBCore.Functions.Notify('You can\'t afford to extend your rent!', 'error', 3000)
-                                                                end
-                                                            end
-                                                        },
-                                                        {
-                                                            title = 'Cancel',
-                                                            description = 'Cancel payment of motel room',
-                                                            onSelect = function() end
-                                                        }
-                                                    }
-                                                })
-                                                lib.showContext('pay_rent')
-                                            else
-                                                QBCore.Functions.Notify('You can only pay when there\'s is 1 day or less left!', 'error', 3000)
-                                            end
-                                        end
-                                    },
-                                    {
-                                        title = 'End Rent',
-                                        description = 'End your renting periode with the motel immediately!',
-                                        onSelect = function()
-                                            TriggerServerEvent('jc-motels:server:endRent', val.uniqueid, val.room)
-                                        end
-                                    },
-                                    {
-                                        title = 'Lost Key',
-                                        description = 'If you have lost a key, you can get a new!',
-                                        onSelect = function()
-                                            local PlayerData = QBCore.Functions.GetPlayerData()
-                                            local money = PlayerData.money['cash']
-                                            local bank = PlayerData.money['bank']
-
-                                            local input = lib.inputDialog('Replace Key', {
-                                                {
-                                                    type = 'select',
-                                                    label = 'Payment Methode',
-                                                    description = 'Pay through bank or card',
-                                                    options = {
-                                                        {value = 'bank', label = 'Bank'},
-                                                        {value = 'cash', label = 'Cash'}
-                                                    },
-                                                    required = true
-                                                }
-                                            })
-
-                                            if money >= v.keyPrice and input[1] == 'cash' then
-                                                TriggerServerEvent('jc-motels:server:replaceKey', val.room, data.uniqueid, v.keyPrice, input[1])
-                                            elseif bank >= v.keyPrice and input[1] == 'bank' then
-                                                TriggerServerEvent('jc-motels:server:replaceKey', val.room, val.uniqueid, v.keyPrice, input[1])
-                                            else
-                                                QBCore.Functions.Notify('You can\'t afford to replace your key!', 'error', 3000)
-                                            end
-                                        end
+                            local PlayerData = QBCore.Functions.GetPlayerData()
+                            local info = lib.inputDialog(_L('funds'), {
+                                {
+                                    type = 'number',
+                                    label = _L('amount'),
+                                    description = _L('amountdesc'),
+                                    required = true,
+                                    default = 0,
+                                },
+                                {
+                                    type = 'select',
+                                    label = _L('transactiontype'),
+                                    description = _L('transactiontypedesc'),
+                                    required = true,
+                                    options = {
+                                        {value = 'deposit', label = 'Deposit'},
+                                        {value = 'withdraw', label = 'Withdraw'},
+                                    }
+                                },
+                                {
+                                    type = 'select',
+                                    label = _L('paymethode'),
+                                    description = _L('paymethodedesc'),
+                                    required = true,
+                                    options = {
+                                        {value = 'bank', label = 'Bank'},
+                                        {value = 'cash', label = 'Cash'},
                                     }
                                 }
                             })
-                            lib.showContext(val.uniqueid)
+
+                            if info[2] == 'deposit' and PlayerData.money['cash'] >= info[1] then
+                                TriggerServerEvent('motel:server:transactionMotelFunds', name, info)
+                            else
+                                QBCore.Functions.Notify(_L('nomoney'), 'error', 3000)
+                            end
+
+                            if info[2] == 'withdraw' and data.funds >= info[1] then
+                                TriggerServerEvent('motel:server:transactionMotelFunds', name, info)
+                            else
+                                QBCore.Functions.Notify(_L('nofundsmoney'), 'error', 3000)
+                            end
+                        end
+                    },
+                    {
+                        title = _L('changename'),
+                        description = _L('changenamedesc'),
+                        onSelect = function()
+                            local info = lib.inputDialog(_L('changename'), {
+                                {
+                                    type = 'input',
+                                    label = _L('newname'),
+                                    description = _L('newnamedesc'),
+                                    required = true,
+                                }
+                            })
+                            TriggerServerEvent('motel:server:changeName', name, info[1])
+                        end
+                    },
+                    {
+                        title = _L('changeprice'),
+                        description = _L('changepricedesc') .. (data.data['roomPrices'] or motelData.roomprices),
+                        onSelect = function()
+                            local info = lib.inputDialog(_L('changeprice'), {
+                                {
+                                    type = 'number',
+                                    label = _L('amount'),
+                                    description = _L('amountdesc2'),
+                                    required = true,
+                                }
+                            })
+                            TriggerServerEvent('motel:server:changeRoomPrice', name, info[1])
+                        end
+                    },
+                    {
+                        title = _L('autopay'),
+                        description = _L('autopaydesc') .. tostring(Config.Motels[name].autoPayment),
+                        onSelect = function()
+                            TriggerServerEvent('motel:server:toggleAutoPay', name)
+                        end
+                    },
+                    {
+                        title = _L('sellmotel'),
+                        description = _L('sellmoteldesc'),
+                        onSelect = function()
+                            TriggerServerEvent('motel:server:sellMotel', name)
+                        end
+                    },
+                }
+            })
+            lib.showContext('manage_motel')
+        else
+            QBCore.Functions.Notify(_L('nodata'), 'error', 3000)
+        end
+    end, name)
+end
+
+function RentRoomsHandler(name, motelData)
+    QBCore.Functions.TriggerCallback('motel:getRooms', function(data)
+        if data then
+            local tableData = {}
+            for _, roomData in pairs(data) do
+                if not roomData.renter or roomData.renter == '' then
+                    tableData[#tableData + 1] = {
+                        title = roomData.room,
+                        description = _L('actionrentroom') .. roomData.room .. _L('actionrentroom2') .. Config.Motels[name].roomprices,
+                        onSelect = function()
+                            local PlayerData = QBCore.Functions.GetPlayerData()
+                            local info = lib.inputDialog(_L('paymethode'), {
+                                {
+                                    type = 'select',
+                                    label = _L('paymethode'),
+                                    description = _L('paymethodedesc'),
+                                    required = true,
+                                    options = {
+                                        {value = 'bank', label = 'Bank'},
+                                        {value = 'cash', label = 'Cash'}
+                                    }
+                                }
+                            })
+                        
+                            if PlayerData.money[info[1]] >= motelData.roomprices then
+                                TriggerServerEvent('motel:server:rentRoom', name, roomData.uniqueID, roomData.room, motelData.payInterval, info[1], motelData.roomprices)
+                                TriggerServerEvent('motel:server:giveKey', name, roomData)
+                            else
+                                QBCore.Functions.Notify(_L('nomoney'), 'error', 3000)
+                            end
                         end
                     }
-                    
-                    lib.registerContext({
-                        id = 'manage_rented_rooms',
-                        title = 'Rented Rooms',
-                        options = roomData
-                    })
-                    lib.showContext('manage_rented_rooms')
                 end
             end
-        end
-    end)
-end
+            Wait(100)
 
-function BuyMotelHandler(k, v)
-    local PlayerData = QBCore.Functions.GetPlayerData()
-    local input = lib.inputDialog('Buy Motel', {
-        {
-            type = 'select',
-            label = 'Payment Methode',
-            description = 'Buy the motel using cash or card',
-            options = {
-                {value = 'cash', label = 'Cash'},
-                {value = 'bank', label = 'Bank'},
-            },
-            required = true
-        }
-    })
-    if not v.owner or v.owner == '' and PlayerData.money[input[1]] >= v.price then
-        TriggerServerEvent('jc-motels:server:buymotel', k, v, input[1])
-    else
-        QBCore.Functions.Notify('Motel is already owned by somebody!', 'error', 3000)
-    end
-end
-
-function AtMotelHandler(k, v)
-    local PlayerData = QBCore.Functions.GetPlayerData()
-    local globalData = {}
-
-    globalData[#globalData + 1] = {
-        title = 'Manage Motel',
-        description = 'Manage the motel if you own it!',
-        onSelect = function()
-            ManageMotelHandler(k, v)
-        end
-    }
-    globalData[#globalData + 1] = {
-        title = 'Rent Motel Room',
-        description = 'Rent a motel room!',
-        onSelect = function()
-            RentMotelHandler(k, v)
-        end
-    }
-    globalData[#globalData + 1] = {
-        title = 'Rented Rooms',
-        description = 'Check motel rooms you have rented!',
-        onSelect = function()
-            RentedRoomsHandler(k, v)
-        end
-    }
-    if not v.owner or v.owner == '' and v.price or v.owner == '' and v.price >= 0 then
-        globalData[#globalData + 1] = {
-            title = 'Buy Motel',
-            description = 'Buy motel for $' .. v.price,
-            onSelect = function()
-                BuyMotelHandler(k, v)
-            end
-        }
-    end
-    
-    local pos = GetEntityCoords(PlayerPedId())
-    while #(pos - v.coords) <= 2.0 do
-        Wait(0)
-        pos = GetEntityCoords(PlayerPedId())
-        lib.showTextUI('[E] To Interact')
-
-        if IsControlJustPressed(0, 38) then
             lib.registerContext({
-                id = k,
-                title = v.label,
-                options = globalData
+                id = 'rent_room',
+                title = _L('rentroomstitle') .. motelData.label,
+                options = tableData
             })
-            lib.showContext(k)
+            lib.showContext('rent_room')
+        else
+            QBCore.Functions.Notify(_L('nodata'), 'error', 3000)
         end
-    end
-    lib.hideTextUI()
+    end, name)
 end
 
-function ToggleDoorHandler(k, keydata)
+function RentedRoomsHandler(name, motelData)
     local PlayerData = QBCore.Functions.GetPlayerData()
-    local items = PlayerData.items
-    local hasFound = false
+    local citizenid = PlayerData.citizenid
 
-    for _, item in pairs(items) do
-        if item.name == Config.MotelKey then
-            if item.info.uniqueID == keydata.uniqueID then
-                RequestAnimDict("anim@heists@keycard@")
-                while not HasAnimDictLoaded("anim@heists@keycard@") do
-                    Wait(0)
-                end
-                TaskPlayAnim(PlayerPedId(), "anim@heists@keycard@", "exit", 8.0, 1.0, -1, 48, 0, 0, 0, 0)
-                Wait(300)
-                QBCore.Functions.TriggerCallback('motels:getDoorDate', function(data)
-                    if data then
-                        Config.DoorlockAction(keydata.uniqueID, not data.isLocked)
-                        ClearPedTasks(PlayerPedId())
-                        TriggerServerEvent('motel:server:setDoorState', keydata.uniqueID)
-                    end
-                end, keydata.uniqueID)
-                hasFound = true
-                break
-            end
-        end
-    end
+    QBCore.Functions.TriggerCallback('motel:getRooms', function(data)
+        local tableData = {}
+        if data then
+            print('Room data')
+            for _, room in pairs(data) do
+                print('Checking rooms', room.room, room.renter)
+                if room.renter == citizenid then
+                    tableData[#tableData + 1] = {
+                        title = room.room,
+                        description = 'Manage your room',
+                        onSelect = function()
+                            local tableData = {}
+                            if Config.Motels[name].autoPayment then
+                                tableData[#tableData + 1] = {
+                                    title = _L('payauto'),
+                                    description = _L('payautodesc'),
+                                    onSelect = function()
 
-    if not hasFound then
-        QBCore.Functions.Notify('You don\'t have a key to this door!', 'error', 3000)
-    else
-        hasFound = false
-    end
-end
+                                    end
+                                }
+                                tableData[#tableData + 1] = {
+                                    title = _L('ledger'),
+                                    description = _L('ledgerdesc'),
+                                    onSelect = function()
+                                        lib.registerContext({
+                                            id = 'manage_roomledger',
+                                            title = _L('ledger'),
+                                            options = {
+                                                {
+                                                    title = _L('ledgerfunds') .. room.ledger or 0,
+                                                    description = _L('rentprice') .. motelData.roomprices,
+                                                    icon = 'fas fa-dollar',
+                                                    readOnly = true,
+                                                },
+                                                {
+                                                    title = _L('depositledger'),
+                                                    description = _L('depositledgerdesc'),
+                                                    icon = 'fas fa-coins',
+                                                    onSelect = function()
+                                                        local PlayerData = QBCore.Functions.GetPlayerData()
+                                                        local info = lib.inputDialog(_L('paymethode'), {
+                                                            {
+                                                                type = 'number',
+                                                                label = _L('amount'),
+                                                                description = _L('depositamountdesc'),
+                                                                required = true,
+                                                                default = 0,
+                                                            },
+                                                            {
+                                                                type = 'select',
+                                                                label = _L('paymethode'),
+                                                                description = _L('paymethodedesc'),
+                                                                required = true,
+                                                                options = {
+                                                                    {value = 'bank', label = 'Bank'},
+                                                                    {value = 'cash', label = 'Cash'},
+                                                                }
+                                                            }
+                                                        })
 
-function BreakInHandler(k, keydata)
-    QBCore.Functions.TriggerCallback('motels:GetCops', function(cops)
-        if cops >= Config.CopCount then
-            local hasItem = nil
-            if Config.InventorySystem == 'qb' then
-                hasItem = QBCore.Functions.HasItem(Config.Lockpick, 1)
-            else
-                hasItem = exports['ps-inventory']:HasItem(Config.Lockpick, 1)
-            end
-            
-            if hasItem then
-                TaskStartScenarioInPlace(PlayerPedId(), 'PROP_HUMAN_PARKING_METER', 0, false)
-                exports['ps-ui']:Circle(function(success)
-                    if success then
-                        QBCore.Functions.TriggerCallback('motels:getDoorDate', function(data)
-                            if data then
-                                if data.isLocked then
-                                    local chance = math.random(1, 100)
-                                    if chance <= Config.SuccessAlarmChance then
-                                        if Config.PoliceAlert == 'qbdefault' then
-                                            TriggerEvent('police:client:policeAlert', GetEntityCoords(PlayerPedId()), 'Suspicious activity reported')
-                                        elseif Config.PoliceAlert == 'ps-dispatch' then
-                                            exports['ps-dispatch']:HouseRobbery()
+                                                        if PlayerData.money[info[2]] >= tonumber(info[1]) then 
+                                                            TriggerServerEvent('motel:server:addToLedger', name, room.uniqueID, info[1], info[2])
+                                                        else
+                                                            QBCore.Functions.Notify(_L('nomoney'), 'error', 3000)
+                                                        end
+                                                    end
+                                                },
+                                                {
+                                                    title = _L('withdrawledger'),
+                                                    description = _L('withdrawledgerdesc'),
+                                                    icon = 'fas fa-wallet',
+                                                    onSelect = function()
+                                                        local PlayerData = QBCore.Functions.GetPlayerData()
+                                                        local info = lib.inputDialog(_L('paymethode'), {
+                                                            {
+                                                                type = 'number',
+                                                                label = _L('amount'),
+                                                                description = _L('depositamountdesc'),
+                                                                required = true,
+                                                                default = 0,
+                                                            }
+                                                        })
+
+                                                        if room.ledger >= tonumber(info[1]) then 
+                                                            TriggerServerEvent('motel:server:removeFromLedger', name, room.uniqueID, info[1])
+                                                        else
+                                                            QBCore.Functions.Notify(_L('noledgermoney'), 'error', 3000)
+                                                        end
+                                                    end
+                                                }
+                                            }
+                                        })
+                                        lib.showContext('manage_roomledger')
+                                    end
+                                }
+                            end
+
+                            if Config.StashProtection then
+                                if Config.StashProtection == 'password' then
+                                    tableData[#tableData + 1] = {
+                                        title = _L('changestashpassword'),
+                                        description = _L('changestashpassworddesc') .. '\n' .. _L('currentpassword') .. room.password,
+                                        onSelect = function()
+                                            local info = lib.inputDialog(_L('changestashpassword'), {
+                                                {
+                                                    type = 'input',
+                                                    label = _L('password'),
+                                                    description = _L('passworddesc'),
+                                                    required = true,
+                                                }
+                                            })
+                                            TriggerServerEvent('motel:server:changeStashPassword', name, room.uniqueID, info[1])
                                         end
-                                    end
-
-                                    if Config.DoorlockSystem == 'qb' then
-                                        Config.DoorlockAction(keydata.uniqueID, not data.isLocked)
-                                    end
-                                    ClearPedTasks(PlayerPedId())
-                                    TriggerServerEvent('motel:server:setDoorState', keydata.uniqueID)
-                                else
-                                    QBCore.Functions.Notify('Can\'t break into an already unlocked door silly!', 'error', 3000)
+                                    }
                                 end
                             end
-                        end, keydata.uniqueID)
-                    else
-                        ClearPedTasks(PlayerPedId())
-                        QBCore.Functions.Notify('Failed at lockpicking door!', 'error', 3000)
 
-                        if Config.PoliceAlert == 'qbdefault' then
-                            TriggerEvent('police:client:policeAlert', GetEntityCoords(PlayerPedId()), 'Suspicious activity reported')
-                        elseif Config.PoliceAlert == 'ps-dispatch' then
-                            exports['ps-dispatch']:HouseRobbery()
+                            tableData[#tableData + 1] = {
+                                title = _L('lostkey'),
+                                description = _L('lostkeydesc') .. motelData.keyPrice,
+                                onSelect = function()
+                                    local PlayerData = QBCore.Functions.GetPlayerData()
+                                    if PlayerData.money['cash'] >= motelData.keyPrice then
+                                        TriggerServerEvent('motel:server:giveKey', name, room, motelData.keyPrice)
+                                        if Config.LostkeyReplaceAll then
+                                            TriggerServerEvent('motel:server:removeAllKeys', name, room)
+                                        end
+                                    else
+                                        QBCore.Functions.Notify(_L('nomoney'), 'error', 3000)
+                                    end
+                                end
+                            }
+
+                            tableData[#tableData + 1] = {
+                                title = _L('copykey'),
+                                description = _L('copykeydesc'),
+                                onSelect = function()
+                                    local PlayerData = QBCore.Functions.GetPlayerData()
+                                    local items = PlayerData.items
+                                    local hasFound = false
+
+                                    for _, item in pairs(items) do
+                                        if item.name == Config.Motelkey then
+                                            local motelInfo = item.info or item.metadata or {}
+                                            if motelInfo.motel == name and motelInfo.room == room.room and motelInfo.uniqueID == room.uniqueID then
+                                                hasFound = true
+                                                break
+                                            end
+                                        end
+                                    end
+                                    Wait(100)
+
+                                    if hasFound then
+                                        if PlayerData.money['cash'] >= motelData.keyPrice then
+                                            TriggerServerEvent('motel:server:giveKey', name, room, motelData.keyPrice)
+                                        else
+                                            QBCore.Functions.Notify(_L('nomoney'), 'error', 3000)
+                                        end
+                                    else
+                                        QBCore.Functions.Notify(_L('nokey'), 'error', 3000)
+                                    end
+                                end
+                            }
+
+                            tableData[#tableData + 1] = {
+                                title = _L('endrent'),
+                                description = _L('endrentdesc'),
+                                onSelect = function()
+                                    TriggerServerEvent('motel:server:endRent', name, room.uniqueID)
+                                end
+                            }
+
+                            lib.registerContext({
+                                id = 'manage_rented_room',
+                                title = room.room,
+                                options = tableData
+                            })
+                            lib.showContext('manage_rented_room')
                         end
-                    end
-                end, math.random(3, 5), 15)
-
-                local loseChance = math.random(1, 100)
-                if loseChance <= Config.CopCount then
-                    TriggerServerEvent('motel:server:loseLockpick')
+                    }
                 end
-            else
-                QBCore.Functions.Notify('You don\'t have a lockpick!', 'error', 3000)
             end
         else
-            QBCore.Functions.Notify('Not enough cops on duty!', 'error', 3000)
+            QBCore.Functions.Notify(_L('nodata'), 'error', 3000)
+            return
         end
+
+        lib.registerContext({
+            id = 'player_rented_rooms',
+            title = _L('rentedrooms'),
+            options = tableData
+        })
+        lib.showContext('player_rented_rooms')
+    end, name)
+end
+
+function StashHandler(name, roomData, coords)
+    local stash = roomData.stash
+    QBCore.Functions.TriggerCallback('motel:getMasterKey', function(code)
+        Config.Stash(name, stash, roomData, code, coords)
     end)
 end
 
-Citizen.CreateThread(function()
-    TriggerServerEvent('jc-motels:server:checkRentedMotels')
-    TriggerServerEvent('jc-motels:server:checkOwnedMotels')
-end)
+function WardrobeHandler()
+    Config.Appearance()
+end
 
-RegisterNetEvent('jc-motels:client:rentedRoom', function(motel, uniqueID, citizenid, fullName)
-    for k, v in pairs(Config.Rooms[motel]) do
-        if v.uniqueID == uniqueID then
-            v.renter = citizenid
-            v.renterName = fullName
-            break
-        end
+function BuyMotelHandler(name, motelData)
+    local PlayerData = QBCore.Functions.GetPlayerData()
+    local info = lib.inputDialog(_L('paymethode'), {
+        {
+            type = 'select',
+            label = _L('paymethode'),
+            description = _L('paymethodedesc'),
+            required = true,
+            options = {
+                {value = 'bank', label = 'Bank'},
+                {value = 'cash', label = 'Cash'}
+            }
+        }
+    })
+
+    if PlayerData.money[info[1]] >= motelData.price then
+        TriggerServerEvent('motel:server:buyMotel', name, motelData, info[1])
+    else
+        QBCore.Functions.Notify(_L('nomoney'), 'error', 3000)
     end
-end)
+end
 
-RegisterNetEvent('jc-motels:client:removeRenter', function(uniqueID)
-    for k, v in pairs(Config.Rooms) do
-        for key, room in pairs(v) do
-            if room.uniqueID == uniqueID then
-                room.renter = nil
-                room.renterName = ''
-                break
-            end
-        end
-    end
-end)
-
-RegisterNetEvent('jc-motels:client:buyMotel', function(motel, citizenid)
-    for k, v in pairs(Config.Motels) do
-        v.owner = citizenid
-    end
-end)
-
-RegisterNetEvent('jc-motels:client:addMotel', function(owner, funds, data)
-    for k, v in pairs(Config.Motels) do
-        if v.label == data.name or v.label == data.newName then
-            if data.newName then
-                v.label = data.newName
-            end
-            v.owner = owner
-            v.funds = funds
-            v.roomprices = data.roomprices
-            v.autoPayment = data.autopay
-            break
-        end
-    end
-end)
-
-RegisterNetEvent('jc-motels:client:changeMotelData', function(motel, dataType, value)
-    for k, v in pairs(Config.Motels) do
-        if v.label == motel then
-            if dataType == 'roomprices' then
-                v.roomprices = value
-            elseif dataType == 'autopay' then
-                v.autoPayment = value
-            elseif dataType == 'namechange' then
-                v.label = value
-            elseif dataType == 'funds' then
-                v.funds = value
-            end
-            break
-        end
-    end
-end)
-
-RegisterNetEvent('motel:client:setDoorState', function(uniqueID)
-    for key, value in pairs(Config.Rooms) do
-        for _, v in pairs(value) do
-            v.doorLocked = not v.doorLocked
-        end
-    end
-end)
-
-RegisterNetEvent('jc-motels:client:removeOwner', function(motel)
-    for k, v in pairs(Config.Motels) do
-        if k == motel then
-            v.owner = nil
-            break
-        end
-    end
-end)
-
-Citizen.CreateThread(function()
-    Wait(500)
-    for key, value in pairs(Config.Rooms) do
-        for _, v in pairs(value) do
-            QBCore.Functions.TriggerCallback('motels:getDoorDate', function(data)
-                if data then
-                    if data.uniqueID == v.uniqueID then
-                        v.doorLocked = data.isLocked
-                        Config.DoorlockAction(v.uniqueID, v.doorLocked)
+function ToggleDoorHandler(name, room)
+    local items = QBCore.Functions.GetPlayerData().items
+    for _, item in pairs(items) do
+        if item.name == Config.Motelkey then
+            local motelInfo = item.info or item.metadata or {}
+            if motelInfo.motel == name and motelInfo.room == room.room and motelInfo.uniqueID == room.uniqueID then
+                QBCore.Functions.TriggerCallback('motel:doorState', function(state)
+                    RequestAnimDict('anim@mp_player_intmenu@key_fob@')
+                    while not HasAnimDictLoaded('anim@mp_player_intmenu@key_fob@') do
+                        Wait(10)
                     end
-                else
-                    if Config.Debug then
-                        print('No data received for uniqueID: ' .. v.uniqueID)
+                    TaskPlayAnim(PlayerPedId(), 'anim@mp_player_intmenu@key_fob@', 'fob_click', -8.0, 8.0, 1000, 50, 0.0, false, false, false)
+                    Config.DoorlockAction(room.uniqueID, not state)
+                    TriggerServerEvent('motels:server:toggleDoorlock', name, room.uniqueID, not state)
+                    hasKey = true
+                    return
+                end, name, room.uniqueID)
+            end
+        end
+    end
+    Wait(100)
+    if not hasKey then
+        return QBCore.Functions.Notify(_L('nokey'), 'error', 3000)
+    end
+end
+RegisterNetEvent('motel:client:toggleDoorHander', ToggleDoorHandler)
+
+function BreakinHandler(name, room)
+    if not QBCore.Functions.HasItem(Config.LockpickItem) then return end
+    LoadAnim('missheistfbisetup1')
+    TaskPlayAnim(PlayerPedId(), 'missheistfbisetup1', 'hassle_intro_loop_f', -8.0, 8.0, -1, 47, 0.0, false, false, false)
+
+    exports['ps-ui']:Circle(function(success)
+        if success then
+            if Config.AlarmChance > 0 then
+                local chance = math.random(1, 100)
+                if chance <= Config.AlarmChance then
+                    Config.PoliceAlert()
+                end
+            end
+
+            if lib.progressBar({
+                label = 'Lockpicking motel room...',
+                duration = math.random(7500, 15000),
+                useWhileDead = false,
+                canCancel = true,
+            }) then
+                ClearPedTasks(PlayerPedId())
+                Config.DoorlockAction(room.uniqueID, false)
+                TriggerServerEvent('motels:server:toggleDoorlock', name, room.uniqueID, false)
+                if Config.LoseLockpickChance > 0 then
+                    local chance = math.random(1, 100)
+                    if chance <= Config.LoseLockpickChance then
+                        TriggerServerEvent('motel:server:removeItem', Config.LockpickItem, 1)
                     end
                 end
-            end, v.uniqueID)
-            Wait(200)
+            end
+        else
+            ClearPedTasks(PlayerPedId())
+            if Config.AlertOnFail then
+                Config.PoliceAlert()
+            end
+            if Config.LoseLockpickOnFail then
+                TriggerServerEvent('motel:server:removeItem', Config.LockpickItem, 1)
+            else
+                if Config.LoseLockpickChance > 0 then
+                    local chance = math.random(1, 100)
+                    if chance <= Config.LoseLockpickChance then
+                        TriggerServerEvent('motel:server:removeItem', Config.LockpickItem, 1)
+                    end
+                end
+            end
         end
-    end
-end)
+    end, Config.PicklockCircles, Config.CircleTime)
+end
+
+function PoliceBreakInHandler(name, room)
+    LoadAnim('missheistfbi3b_ig7')
+    TaskPlayAnim(PlayerPedId(), 'missheistfbi3b_ig7', 'lift_fibagent_loop', -8.0, 8.0, -1, 47, 0.0, false, false, false)
+    exports['ps-ui']:Circle(function(success)
+        if success then
+            ClearPedTasks(PlayerPedId())
+            Config.DoorlockAction(room.uniqueID, false)
+            TriggerServerEvent('motels:server:toggleDoorlock', name, room.uniqueID, false)
+            QBCore.Functions.Notify(_L('policebrokendoor'))
+            TriggerServerEvent('motel:server:createMasterKey')
+            QBCore.Functions.TriggerCallback('motel:getMasterKey', function(code)
+                if code then
+                    QBCore.Functions.Notify(_L('masterkeytext') .. code, 'info', 10000)
+                end
+            end)
+        else
+            ClearPedTasks(PlayerPedId())
+            QBCore.Functions.Notify(_L('policebrokendoorfail'), 'error', 3000)
+        end
+    end, Config.PicklockCircles, Config.CircleTime)
+end
+
+if GetResourceState('qb-core') == 'started' or GetResourceState('qbx-core') == 'started' then
+    CreateThread(function()
+        while not LocalPlayer.state.isLoggedIn do
+            Wait(10)
+        end
+        TriggerServerEvent('motel:server:playerLoaded')
+    end)
+end
