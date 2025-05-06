@@ -47,6 +47,19 @@ CreateThread(function()
             end
         end
     end)
+
+    if GetResourceState('origen_inventory') == 'started' then
+        for name, roomData in pairs(Config.Rooms) do
+            for _, room in pairs(roomData) do
+                local stash = room.stash
+                exports['origen_inventory']:registerStash(name .. '_' .. room.uniqueID, {
+                    label = room.label,
+                    slots = stash.slots,
+                    weight = stash.weight,
+                })
+            end
+        end
+    end
 end)
 
 CreateThread(function()

@@ -140,6 +140,8 @@ RegisterNetEvent('motel:server:giveKey', function(motel, roomData, price)
         exports['ox_inventory']:AddItem(src, Config.Motelkey, 1, info)
         TriggerClientEvent('inventory:client:ItemBox', src, QBCore.Shared.Items[Config.Motelkey], 'add')
         if price then Player.Functions.RemoveMoney('cash', price) end
+    elseif GetResourceState('origen_inventory') == 'started' then
+        Player.Functions.AddItem(Config.MotelKey, 1, info)
     end
 end)
 
@@ -167,6 +169,8 @@ RegisterNetEvent('motel:server:removeAllKeys', function(motel, roomData)
                     elseif GetResourceState('ox_inventory') then
                         exports['ox_inventory']:AddItem(v.PlayerData.source, Config.Motelkey, 1, nil, info)
                         TriggerClientEvent('inventory:client:ItemBox', src, QBCore.Shared.Items[Config.Motelkey], 'add')
+                    elseif GetResourceState('origen_inventory') == 'started' then
+                        Player.Functions.AddItem(Config.MotelKey, 1, info)
                     end
                 end
             end
@@ -292,12 +296,15 @@ end)
 
 RegisterNetEvent('motel:server:removeItem', function(item, amount)
     local src = source
+    local Player = QBCore.Functions.GetPlayer(src)
     if GetResourceState('qs-inventory') == 'started' then
         exports['qs-inventory']:RemoveItem(src, item, amount)
     elseif GetResourceState('qs-inventory') == 'started' then
         exports['qb-inventory']:RemoveItem(src, item, amount)
     elseif GetResourceState('qs-inventory') == 'started' then
         exports['ox_inventory']:RemoveItem(src, item, amount)
+    elseif GetResourceState('origen_inventory') == 'started' then
+        Player.Functions.RemoveItem(Config.MotelKey, 1, info)
     end
 end)
 
@@ -306,6 +313,7 @@ RegisterNetEvent('motel:server:createMasterKey', function()
 end)
 
 RegisterNetEvent('motel:server:openStash', function(key, slots, weight, coords)
+    
     if GetResourceState('qb-inventory') == 'started' then
         exports['qb-inventory']:OpenInventory(source, key, {
             maxweight = weight,

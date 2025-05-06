@@ -2,8 +2,8 @@ Config = Config or {}
 Config.Locale = 'en' -- Currently supported languages, which you can make as many you want as long the files are set up properly use existing as reference! Current supported(en, dk)
 
 -- General Config --
-Config.Framework = 'qb' -- Compatible for QB and QBX
-Config.UseTarget = 'qb-target' -- Whether you wanna use target, ox_target, qb-target or false if false will use polyzone
+Config.Framework = 'qbx' -- Compatible for QB and QBX
+Config.UseTarget = 'ox_target' -- Whether you wanna use target, ox_target, qb-target or false if false will use polyzone
 Config.Polyzone = 'PolyZone' -- Currently only use PolyZone
 Config.KeyItemUseable = false -- Whether you wanna make it useable, if it's useable then will check if you're within a certain distance for the door to use the key to unlock(By using inventory useable!)
 Config.EnableRobbery = true -- Whether you wanna make motel rooms robbable
@@ -29,7 +29,7 @@ Config.PicklockCircles = math.random(3, 5) -- How many circles for picklocking m
 Config.CircleTime = 10 -- How fast the circle goes, the lower, the faster.
 
 -- Script Integration Config --
-Config.DoorlockScript = 'qb-doorlock' -- Can use qb-doorlock or ox_doorlock
+Config.DoorlockScript = 'ox_doorlock' -- Can use qb-doorlock or ox_doorlock
 
 function Config.Appearance() -- How you wanna use appearance script client-sided!
     local QBCore = exports['qb-core']:GetCoreObject()
@@ -126,6 +126,36 @@ function Config.Stash(name, stash, roomData, masterCode, coords) -- How you wann
                             end
                         else
                             TriggerServerEvent('motel:server:openStash', name .. '_' .. roomData.uniqueID, stash.slots, stash.weight, coords)
+                        end
+                    end
+                end
+            else
+                QBCore.Functions.Notify(_L('nodata'), 'error', 3000)
+                return
+            end
+        end, name)
+    elseif GetResourceState('origen_inventory') == 'started' then
+        QBCore.Functions.TriggerCallback('motel:getRooms', function(data)
+            if data then
+                for _, room in pairs(data) do
+                    if room.uniqueID == roomData.uniqueID then
+                        if room.password then
+                            local info = lib.inputDialog('Insert Password', {
+                                {
+                                    type = 'input',
+                                    label = _L('password'),
+                                    description = _L('passwordeesc'),
+                                }
+                            })
+
+                            if info[1] == room.password or masterCode and info[1] == tostring(masterCode) then
+                                TriggerServerEvent('motel:server:openStash', name .. '_' .. roomData.uniqueID, stash.slots, stash.weight, coords)
+                                exports['origen_inventory']:openInventory('stash', name .. '_' .. roomData.uniqueID)
+                            else
+                                QBCore.Functions.Notify(_L('wrongpassword'), 'error', 3000)
+                            end
+                        else
+                            exports['origen_inventory']:openInventory('stash', name .. '_' .. roomData.uniqueID)
                         end
                     end
                 end
