@@ -10,5 +10,6 @@ https://gyazo.com/b86184c25c57eea536cb4b8bdde18ceb
 
 - Setup the config to what fits you the best
 - Setup doorlock Door UniqueID will be doorID as shown below;
+
 **_ox_doorlock_**: https://gyazo.com/65639b0bbe8b49b1c5b059bb89ca0bbc
 **_qb-doorlock_**: qb-doorlock -> configs -> created file for door id -> Highlighted section https://gyazo.com/76b91dec7fe812fe34b1b5b9a2021376
